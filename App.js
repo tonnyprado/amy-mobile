@@ -1,20 +1,65 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import LoginScreen from './src/screens/LoginScreen';
+import PaquetesScreen from './src/screens/PaquetesScreen';
+import PaqueteDetalleScreen from './src/screens/PaqueteDetalleScreen';
+import LoadingScreen from './src/components/LoadingScreen';
 
-export default function App() {
+const Stack = createNativeStackNavigator();
+
+function AppNavigator() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen message="Iniciando..." />;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+      }}
+    >
+      {!user ? (
+        // No autenticado - Solo Login
+        <Stack.Screen name="Login" component={LoginScreen} />
+      ) : (
+        // Autenticado - Pantallas principales
+        <>
+          <Stack.Screen name="Paquetes" component={PaquetesScreen} />
+          <Stack.Screen
+            name="PaqueteDetalle"
+            component={PaqueteDetalleScreen}
+            options={{
+              headerShown: true,
+              headerTitle: 'Detalle del Paquete',
+              headerStyle: {
+                backgroundColor: '#2563eb',
+              },
+              headerTintColor: '#fff',
+              headerTitleStyle: {
+                fontWeight: '700',
+              },
+            }}
+          />
+        </>
+      )}
+    </Stack.Navigator>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default function App() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <NavigationContainer>
+          <AppNavigator />
+        </NavigationContainer>
+      </AuthProvider>
+    </GestureHandlerRootView>
+  );
+}

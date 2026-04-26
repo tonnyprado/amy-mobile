@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "amy-mobile",
-    "slug": "amy-mobile",
+    "name": "AMY Delivery",
+    "slug": "amy-delivery",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,20 +10,63 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2563eb"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.amybusiness.delivery",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "AMY Delivery necesita tu ubicación para rastrear entregas en tiempo real.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "AMY Delivery necesita tu ubicación en segundo plano para rastrear entregas.",
+        "NSCameraUsageDescription": "Se requiere acceso a la cámara para tomar fotos de evidencia de entrega.",
+        "NSPhotoLibraryUsageDescription": "Se requiere acceso a la galería para seleccionar fotos de evidencia."
+      }
     },
     "android": {
+      "package": "com.amybusiness.delivery",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2563eb"
       },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
       "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "AMY Delivery necesita tu ubicación para rastrear entregas en tiempo real.",
+          "locationWhenInUsePermission": "AMY Delivery necesita tu ubicación para rastrear entregas.",
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permite a AMY Delivery usar la cámara para tomar fotos de evidencia."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permite a AMY Delivery acceder a tu galería para seleccionar fotos."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "tu-project-id-aqui"
+      }
     }
   }
 }
