@@ -102,7 +102,9 @@ export async function enviarUbicacion(ubicacion) {
     throw new Error('Error al enviar ubicación');
   }
 
-  return await response.json();
+  // El backend devuelve texto plano, no JSON
+  const text = await response.text();
+  return { message: text };
 }
 
 // ============================================================================
