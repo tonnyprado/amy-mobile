@@ -30,13 +30,29 @@ export async function obtenerPedidosRepartidor(idRepartidor) {
  * @returns {Promise<Array>}
  */
 export async function obtenerPedidosHoy(idRepartidor) {
-  const response = await apiClient.get(`/api/pedidos/repartidor/${idRepartidor}/hoy`);
+  const endpoint = `/api/pedidos/repartidor/${idRepartidor}/hoy`;
+  console.log('🌐 API Request:', endpoint);
+
+  const response = await apiClient.get(endpoint);
+
+  console.log('📡 Response status:', response.status);
+  console.log('📡 Response ok:', response.ok);
+
+  // 403/404 = No hay pedidos asignados (esto es normal, no es error)
+  if (response.status === 403 || response.status === 404) {
+    console.log('⚠️ Backend retornó 403/404 - Sin pedidos asignados');
+    return [];
+  }
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ Error del backend:', errorText);
     throw new Error('Error al obtener pedidos de hoy');
   }
 
-  return await response.json();
+  const data = await response.json();
+  console.log('📥 Data recibida:', data);
+  return data;
 }
 
 /**
@@ -176,6 +192,8 @@ export async function obtenerRecorridoActivo(idRepartidor) {
  * @param {string} intento.fotoEvidenciaUrl
  * @param {string} intento.firmaUrl
  * @param {string} intento.observaciones
+ * @param {string} intento.nombreReceptor - Nombre de quien recibe
+ * @param {string} intento.recibidoPor - TITULAR, CONSULTORA, FAMILIAR, LIDER, GZ, VECINO
  * @returns {Promise<Object>}
  */
 export async function registrarIntentoEntrega(intento) {
@@ -188,7 +206,9 @@ export async function registrarIntentoEntrega(intento) {
     descripcionFallo: intento.descripcionFallo || null,
     fotoEvidenciaUrl: intento.fotoEvidenciaUrl || null,
     firmaUrl: intento.firmaUrl || null,
-    observaciones: intento.observaciones || null
+    observaciones: intento.observaciones || null,
+    nombreReceptor: intento.nombreReceptor || null,
+    recibidoPor: intento.recibidoPor || null
   });
 
   if (!response.ok) {
@@ -243,8 +263,11 @@ export function convertirPedidoBackend(pedidoBackend) {
   return {
     id: pedidoBackend.id,
     numeroGuia: pedidoBackend.numeroPedido || `PED-${pedidoBackend.id}`,
+    numeroPedido: pedidoBackend.numeroPedido,
     destinatario: pedidoBackend.nombreConsultora || 'Sin nombre',
+    nombreConsultora: pedidoBackend.nombreConsultora,
     direccion: pedidoBackend.direccionConsultora || 'Sin dirección',
+    direccionConsultora: pedidoBackend.direccionConsultora,
     telefono: pedidoBackend.telefono || 'Sin teléfono',
     estado: mapearEstadoBackend(pedidoBackend.estado),
     fechaAsignacion: pedidoBackend.fechaEmision || new Date().toISOString().split('T')[0],
@@ -256,6 +279,10 @@ export function convertirPedidoBackend(pedidoBackend) {
     ruta: pedidoBackend.ruta,
     territorio: pedidoBackend.territorio,
     campania: pedidoBackend.campania,
+
+    // Coordenadas GPS (necesarias para el mapa de navegación)
+    latitud: pedidoBackend.latitud || null,
+    longitud: pedidoBackend.longitud || null,
 
     // Datos de entrega/no entrega
     nombreRecibe: pedidoBackend.nombreReceptor || '',

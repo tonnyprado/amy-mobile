@@ -1,0 +1,68 @@
+/**
+ * Configuración de AWS S3 para upload de archivos
+ *
+ * IMPORTANTE: Este módulo está preparado para cuando se implemente S3.
+ * Por ahora está DESHABILITADO y se usa base64 directamente.
+ */
+
+/**
+ * Feature flag para habilitar/deshabilitar S3
+ * Cambiar a true cuando S3 esté configurado en el backend
+ */
+export const S3_ENABLED = false;
+
+/**
+ * Configuración de S3
+ * Estos valores se configurarán cuando se implemente S3
+ */
+export const S3_CONFIG = {
+  // URL del endpoint del backend para upload
+  uploadEndpoint: '/api/upload',
+
+  // Bucket de S3 (configurar en backend)
+  bucket: 'amy-delivery-evidencias',
+
+  // Región de AWS (configurar en backend)
+  region: 'us-east-1',
+
+  // Prefijos para organizar archivos en S3
+  prefixes: {
+    fotos: 'evidencias/fotos/',
+    firmas: 'evidencias/firmas/',
+  },
+
+  // Tamaños máximos permitidos
+  maxSizes: {
+    foto: 5 * 1024 * 1024,  // 5 MB
+    firma: 1 * 1024 * 1024,  // 1 MB
+  },
+
+  // Formatos permitidos
+  allowedFormats: {
+    foto: ['image/jpeg', 'image/jpg', 'image/png'],
+    firma: ['image/png'],
+  },
+};
+
+/**
+ * Genera un nombre de archivo único para S3
+ * @param {string} tipo - 'foto' o 'firma'
+ * @param {number} pedidoId - ID del pedido
+ * @returns {string} Nombre de archivo único
+ */
+export function generarNombreArchivoS3(tipo, pedidoId) {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  return `${S3_CONFIG.prefixes[tipo]}pedido-${pedidoId}-${tipo}-${timestamp}-${random}.png`;
+}
+
+/**
+ * Obtiene la URL completa de S3 a partir de la key
+ * Esta función se usará cuando S3 esté implementado
+ * @param {string} key - Key del archivo en S3
+ * @returns {string} URL completa
+ */
+export function obtenerUrlS3(key) {
+  const { bucket, region } = S3_CONFIG;
+  return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+}

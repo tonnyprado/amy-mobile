@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import LoginScreen from './src/screens/LoginScreen';
 import PaquetesScreen from './src/screens/PaquetesScreen';
 import PaqueteDetalleScreen from './src/screens/PaqueteDetalleScreen';
+import NavigationMapScreen from './src/screens/NavigationMapScreen';
 import LoadingScreen from './src/components/LoadingScreen';
 
 const Stack = createNativeStackNavigator();
@@ -44,6 +45,15 @@ function AppNavigator() {
               headerTitleStyle: {
                 fontWeight: '700',
               },
+            }}
+          />
+          <Stack.Screen
+            name="NavigationMap"
+            component={NavigationMapScreen}
+            options={{
+              headerShown: false,
+              presentation: 'fullScreenModal',
+              animation: 'slide_from_bottom',
             }}
           />
         </>

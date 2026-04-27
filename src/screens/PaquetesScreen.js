@@ -19,6 +19,7 @@ import {
 } from '../services/repartidorApi';
 import PaqueteCard from '../components/PaqueteCard';
 import GPSStatusIndicator from '../components/GPSStatusIndicator';
+import IslandBar from '../components/IslandBar';
 import Button from '../components/Button';
 import LoadingScreen from '../components/LoadingScreen';
 
@@ -38,6 +39,7 @@ export default function PaquetesScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [enRuta, setEnRuta] = useState(false);
   const [recorridoId, setRecorridoId] = useState(null);
+  const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
 
   // Hook de geolocalización
   const {
@@ -47,16 +49,18 @@ export default function PaquetesScreen({ navigation }) {
     ultimoEnvio,
     solicitarPermisos
   } = useGeolocation({
-    repartidorId: user?.id,
+    repartidorId: user?.repartidor?.idRepartidor,
     enabled: enRuta,
     estadoActividad: enRuta ? 'EN_RUTA' : 'EN_ALMACEN',
     intervalo: 15000
   });
 
-  // Cargar paquetes al montar
+  // Cargar paquetes cuando el usuario esté disponible
   useEffect(() => {
-    cargarPaquetes();
-  }, []);
+    if (user?.repartidor?.idRepartidor) {
+      cargarPaquetes();
+    }
+  }, [user]);
 
   // Actualizar estado de enRuta cuando cambian los paquetes
   useEffect(() => {
@@ -65,14 +69,31 @@ export default function PaquetesScreen({ navigation }) {
   }, [paquetes]);
 
   const cargarPaquetes = async () => {
-    if (!user?.id) return;
+    // Debug: Ver estructura del usuario
+    console.log('👤 Usuario completo:', JSON.stringify(user, null, 2));
+    console.log('👤 ID del repartidor:', user?.repartidor?.idRepartidor);
+
+    const repartidorId = user?.repartidor?.idRepartidor;
+    if (!repartidorId) {
+      console.warn('⚠️ No se encontró idRepartidor en el usuario');
+      return;
+    }
 
     try {
-      const pedidosBackend = await obtenerPedidosHoy(user.id);
+      console.log('📦 Cargando pedidos para repartidor:', repartidorId);
+      const pedidosBackend = await obtenerPedidosHoy(repartidorId);
+      console.log('✅ Pedidos recibidos del backend:', pedidosBackend.length);
+      console.log('📋 Primer pedido (raw):', JSON.stringify(pedidosBackend[0], null, 2));
+
       const pedidosConvertidos = pedidosBackend.map(convertirPedidoBackend);
+      console.log('🔄 Pedidos convertidos:', pedidosConvertidos.length);
+      console.log('📋 Primer pedido (convertido):', JSON.stringify(pedidosConvertidos[0], null, 2));
+
       setPaquetes(pedidosConvertidos);
+      console.log('💾 Pedidos guardados en estado');
     } catch (error) {
-      console.error('Error al cargar paquetes:', error);
+      console.error('❌ Error al cargar paquetes:', error);
+      console.error('❌ Stack:', error.stack);
       Alert.alert('Error', 'No se pudieron cargar los paquetes. Intenta de nuevo.');
     } finally {
       setLoading(false);
@@ -98,14 +119,27 @@ export default function PaquetesScreen({ navigation }) {
       prevPaquetes.map(paquete => {
         if (paquete.id !== paqueteId) return paquete;
 
+        const ahora = new Date().toISOString();
+        const nuevasEvidencias = {
+          ...paquete.evidencias,
+          ...evidencias,
+          ultimaActualizacion: ahora
+        };
+
+        // Agregar fecha/hora de entrega si se marca como entregado
+        if (nuevoEstado === 'ENTREGADO' && !paquete.evidencias?.fechaEntrega) {
+          nuevasEvidencias.fechaEntrega = ahora;
+        }
+
+        // Agregar fecha/hora de no entrega
+        if (nuevoEstado === 'NO_ENTREGADO' && !paquete.evidencias?.fechaNoEntrega) {
+          nuevasEvidencias.fechaNoEntrega = ahora;
+        }
+
         return {
           ...paquete,
           estado: nuevoEstado,
-          evidencias: {
-            ...paquete.evidencias,
-            ...evidencias,
-            ultimaActualizacion: new Date().toISOString()
-          }
+          evidencias: nuevasEvidencias
         };
       })
     );
@@ -129,7 +163,7 @@ export default function PaquetesScreen({ navigation }) {
 
   const iniciarRecorridoBackend = async () => {
     try {
-      const recorrido = await iniciarRecorrido(user.id);
+      const recorrido = await iniciarRecorrido(user.repartidor.idRepartidor);
       setRecorridoId(recorrido.id);
       console.log('Recorrido iniciado:', recorrido.id);
     } catch (error) {
@@ -139,7 +173,7 @@ export default function PaquetesScreen({ navigation }) {
 
   const finalizarRecorridoBackend = async () => {
     try {
-      await finalizarRecorrido(user.id);
+      await finalizarRecorrido(user.repartidor.idRepartidor);
       setRecorridoId(null);
       setEnRuta(false);
       console.log('Recorrido finalizado');
@@ -158,6 +192,27 @@ export default function PaquetesScreen({ navigation }) {
       ]
     );
   };
+
+  // Abrir navegación GPS
+  const handleOpenNavigation = () => {
+    if (pedidosEnRuta.length === 0) return;
+
+    // Seleccionar el primer pedido si no hay ninguno seleccionado
+    const pedidoParaNavegar = pedidoSeleccionado || pedidosEnRuta[0];
+
+    navigation.navigate('NavigationMap', {
+      pedidos: pedidosEnRuta,
+      ubicacionActual: ubicacion ? {
+        lat: ubicacion.latitud,
+        lng: ubicacion.longitud
+      } : null,
+      onActualizarEstado: actualizarEstadoPaquete
+    });
+  };
+
+  // Filtrar pedidos EN_RUTA
+  const pedidosEnRuta = paquetes.filter(p => p.estado === 'EN_RUTA');
+
 
   // Filtrar paquetes
   const paquetesFiltrados = filtroActivo === 'TODOS'
@@ -254,6 +309,14 @@ export default function PaquetesScreen({ navigation }) {
           contentContainerStyle={styles.listContent}
         />
       </View>
+
+      {/* IslandBar flotante - aparece cuando hay pedidos EN_RUTA */}
+      <IslandBar
+        pedidosEnRuta={pedidosEnRuta.length}
+        pedidoActual={pedidoSeleccionado}
+        onPress={handleOpenNavigation}
+        isExpanded={pedidoSeleccionado !== null}
+      />
     </View>
   );
 }
