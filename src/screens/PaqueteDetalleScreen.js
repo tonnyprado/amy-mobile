@@ -16,6 +16,7 @@ import Input from '../components/Input';
 import Card from '../components/Card';
 import SignaturePad from '../components/SignaturePad';
 import AnimatedIcon, { ANIMATED_ICONS } from '../components/AnimatedIcon';
+import AddressSearchModal from '../components/AddressSearchModal';
 import { registrarIntentoEntrega, obtenerDetallePedido } from '../services/repartidorApi';
 import { subirFirma, subirMultiplesFotos } from '../services/uploadService';
 import { S3_ENABLED } from '../config/s3Config';
@@ -37,7 +38,10 @@ const RECIBIDO_POR = {
 };
 
 export default function PaqueteDetalleScreen({ route, navigation }) {
-  const { paquete, ubicacion, onActualizarEstado } = route.params;
+  const { paquete: paqueteInicial, ubicacion } = route.params;
+
+  // Estado local del paquete (para poder actualizarlo cuando se geocodifica)
+  const [paquete, setPaquete] = useState(paqueteInicial);
 
   const [nombreRecibe, setNombreRecibe] = useState(paquete.evidencias?.nombreRecibe || '');
   const [relacionRecibe, setRelacionRecibe] = useState(paquete.evidencias?.relacionRecibe || '');
@@ -50,6 +54,9 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
   // Datos completos de la boleta (cuando está entregado/no entregado)
   const [boletaCompleta, setBoletaCompleta] = useState(null);
   const [loadingBoleta, setLoadingBoleta] = useState(false);
+
+  // Modal de búsqueda de dirección
+  const [showAddressSearch, setShowAddressSearch] = useState(false);
 
   const estadoConfig = ESTADOS_CONFIG[paquete.estado] || ESTADOS_CONFIG.PENDIENTE;
 
@@ -120,6 +127,22 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
 
   const handleLlamar = () => {
     Linking.openURL(`tel:${paquete.telefono}`);
+  };
+
+  const handleDireccionEncontrada = (resultado) => {
+    // Actualizar el paquete local con las nuevas coordenadas y dirección corregida
+    setPaquete(prev => ({
+      ...prev,
+      latitud: resultado.latitud,
+      longitud: resultado.longitud,
+      direccionCorregida: resultado.direccionOriginal !== prev.direccion ? resultado.direccionOriginal : null
+    }));
+
+    Alert.alert(
+      'Éxito',
+      'Dirección actualizada correctamente. Las coordenadas GPS se han guardado.',
+      [{ text: 'OK' }]
+    );
   };
 
   const handleTomarFoto = async () => {
@@ -212,16 +235,7 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
                 recibidoPor: relacionRecibe || null
               });
 
-              // Actualizar estado local
-              onActualizarEstado(paquete.id, nuevoEstado, {
-                nombreRecibe,
-                relacionRecibe,
-                notasEntrega,
-                motivoNoEntrega,
-                fotos,
-                firma
-              });
-
+              // Navegar de regreso - la lista se actualizará automáticamente
               Alert.alert(
                 'Éxito',
                 `Pedido marcado como ${ESTADOS_CONFIG[nuevoEstado].label}`,
@@ -289,19 +303,47 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
           <InfoRow label="Nombre" value={paquete.destinatario} />
           <InfoRow label="Teléfono" value={paquete.telefono} />
           <InfoRow label="Dirección" value={paquete.direccion} />
+          {paquete.direccionCorregida && (
+            <View style={styles.direccionCorregidaInfo}>
+              <Text style={styles.direccionCorregidaLabel}>✅ Dirección corregida:</Text>
+              <Text style={styles.direccionCorregidaValue}>{paquete.direccionCorregida}</Text>
+            </View>
+          )}
           <InfoRow label="Referencia" value={paquete.referencia} />
 
-          <TouchableOpacity style={styles.callButton} onPress={handleLlamar}>
-            <View style={styles.callButtonContent}>
-              <AnimatedIcon
-                source={{ uri: ANIMATED_ICONS.phone }}
-                size={32}
-                autoPlay={true}
-                loop={true}
-              />
-              <Text style={styles.callButtonText}>Llamar</Text>
-            </View>
-          </TouchableOpacity>
+          <View style={styles.clienteActions}>
+            <TouchableOpacity style={styles.callButton} onPress={handleLlamar}>
+              <View style={styles.callButtonContent}>
+                <AnimatedIcon
+                  source={{ uri: ANIMATED_ICONS.phone }}
+                  size={32}
+                  autoPlay={true}
+                  loop={true}
+                />
+                <Text style={styles.callButtonText}>Llamar</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.addressButton,
+                paquete.direccionCorregida && styles.addressButtonCorrected
+              ]}
+              onPress={() => setShowAddressSearch(true)}
+            >
+              <View style={styles.addressButtonContent}>
+                <AnimatedIcon
+                  source={{ uri: paquete.direccionCorregida ? ANIMATED_ICONS.check : ANIMATED_ICONS.search }}
+                  size={28}
+                  autoPlay={true}
+                  loop={true}
+                />
+                <Text style={styles.addressButtonText}>
+                  {paquete.direccionCorregida ? 'Modificar Dirección' : 'Corregir Dirección'}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </Card>
 
         {/* Evidencia de entrega */}
@@ -405,6 +447,14 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
           />
         </View>
       </ScrollView>
+
+      {/* Modal de búsqueda/corrección de dirección */}
+      <AddressSearchModal
+        visible={showAddressSearch}
+        onClose={() => setShowAddressSearch(false)}
+        pedido={paquete}
+        onSuccess={handleDireccionEncontrada}
+      />
     </View>
   );
 }
@@ -680,12 +730,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#0f172a',
   },
+  direccionCorregidaInfo: {
+    backgroundColor: '#d1fae5',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10b981',
+  },
+  direccionCorregidaLabel: {
+    fontSize: 12,
+    color: '#065f46',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  direccionCorregidaValue: {
+    fontSize: 14,
+    color: '#047857',
+    fontWeight: '500',
+  },
+  clienteActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
   callButton: {
+    flex: 1,
     backgroundColor: '#10b981',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 12,
+  },
+  addressButton: {
+    flex: 1,
+    backgroundColor: '#f59e0b',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  addressButtonCorrected: {
+    backgroundColor: '#3b82f6',
   },
   callButtonContent: {
     flexDirection: 'row',
@@ -694,7 +779,17 @@ const styles = StyleSheet.create({
   },
   callButtonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  addressButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  addressButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: '600',
   },
   photoButton: {

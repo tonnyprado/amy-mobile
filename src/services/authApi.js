@@ -25,6 +25,22 @@ export async function login(username, password) {
 }
 
 /**
+ * Obtiene los datos actualizados del usuario actual
+ * (usa el token guardado automáticamente por apiClient)
+ * @returns {Promise<Object>} Usuario actualizado
+ */
+export async function obtenerUsuarioActual() {
+  const response = await apiClient.get('/api/usuarios/me');
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Error al obtener usuario' }));
+    throw new Error(error.message || 'No se pudo obtener la información del usuario');
+  }
+
+  return await response.json();
+}
+
+/**
  * Verifica si el usuario tiene rol de repartidor
  * @param {Object} user
  * @returns {boolean}
@@ -35,5 +51,6 @@ export function esRepartidor(user) {
 
 export default {
   login,
+  obtenerUsuarioActual,
   esRepartidor
 };

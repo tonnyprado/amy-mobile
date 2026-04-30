@@ -7,7 +7,8 @@ import {
   FlatList,
   ActivityIndicator,
   SafeAreaView,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { StatusBar } from 'expo-status-bar';
@@ -29,7 +30,7 @@ import { calculateRoute, formatDistance, formatDuration } from '../services/rout
  * @param {Object} props.route.params.ubicacionActual - {lat, lng} ubicación actual
  */
 export default function NavigationMapScreen({ route, navigation }) {
-  const { pedidos = [], ubicacionActual, onActualizarEstado } = route.params || {};
+  const { pedidos = [], ubicacionActual } = route.params || {};
 
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState(null);
   const [ruta, setRuta] = useState(null);
@@ -117,8 +118,7 @@ export default function NavigationMapScreen({ route, navigation }) {
       ubicacion: ubicacionActual ? {
         latitud: ubicacionActual.lat,
         longitud: ubicacionActual.lng
-      } : null,
-      onActualizarEstado: onActualizarEstado || (() => {})
+      } : null
     });
   };
 

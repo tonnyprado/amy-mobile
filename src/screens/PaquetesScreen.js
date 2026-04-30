@@ -9,6 +9,7 @@ import {
   Alert
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { useGeolocation } from '../hooks/useGeolocation';
 import {
@@ -32,7 +33,7 @@ const FILTROS = [
 ];
 
 export default function PaquetesScreen({ navigation }) {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [paquetes, setPaquetes] = useState([]);
   const [filtroActivo, setFiltroActivo] = useState('TODOS');
   const [loading, setLoading] = useState(true);
@@ -62,6 +63,27 @@ export default function PaquetesScreen({ navigation }) {
     }
   }, [user]);
 
+  // Recargar paquetes y datos del usuario cuando la pantalla vuelve al foco
+  useFocusEffect(
+    React.useCallback(() => {
+      const recargarDatos = async () => {
+        if (user?.repartidor?.idRepartidor) {
+          // Refrescar datos del usuario (incluyendo carritos actualizados)
+          try {
+            await refreshUser();
+          } catch (error) {
+            console.warn('No se pudieron refrescar los datos del usuario:', error);
+          }
+
+          // Cargar paquetes
+          cargarPaquetes();
+        }
+      };
+
+      recargarDatos();
+    }, [user?.repartidor?.idRepartidor])
+  );
+
   // Actualizar estado de enRuta cuando cambian los paquetes
   useEffect(() => {
     const hayEnRuta = paquetes.some(p => p.estado === 'EN_RUTA');
@@ -72,6 +94,7 @@ export default function PaquetesScreen({ navigation }) {
     // Debug: Ver estructura del usuario
     console.log('👤 Usuario completo:', JSON.stringify(user, null, 2));
     console.log('👤 ID del repartidor:', user?.repartidor?.idRepartidor);
+    console.log('🚛 Carritos asignados:', user?.repartidor?.carritos);
 
     const repartidorId = user?.repartidor?.idRepartidor;
     if (!repartidorId) {
@@ -109,8 +132,7 @@ export default function PaquetesScreen({ navigation }) {
   const handlePaquetePress = (paquete) => {
     navigation.navigate('PaqueteDetalle', {
       paquete,
-      ubicacion,
-      onActualizarEstado: actualizarEstadoPaquete
+      ubicacion
     });
   };
 
@@ -205,8 +227,7 @@ export default function PaquetesScreen({ navigation }) {
       ubicacionActual: ubicacion ? {
         lat: ubicacion.latitud,
         lng: ubicacion.longitud
-      } : null,
-      onActualizarEstado: actualizarEstadoPaquete
+      } : null
     });
   };
 
@@ -241,6 +262,13 @@ export default function PaquetesScreen({ navigation }) {
         <View>
           <Text style={styles.headerTitle}>Ruta del día</Text>
           <Text style={styles.headerSubtitle}>Hola, {user?.nombre}</Text>
+          {user?.repartidor?.carritos && (
+            <Text style={styles.headerInfo}>
+              Carritos: {Array.isArray(user.repartidor.carritos)
+                ? user.repartidor.carritos.length
+                : user.repartidor.carritos}
+            </Text>
+          )}
         </View>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Salir</Text>
@@ -353,6 +381,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#bfdbfe',
     marginTop: 2,
+  },
+  headerInfo: {
+    fontSize: 12,
+    color: '#bfdbfe',
+    marginTop: 4,
+    fontWeight: '600',
   },
   logoutButton: {
     padding: 8,

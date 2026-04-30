@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { login as loginApi } from '../services/authApi';
+import { login as loginApi, obtenerUsuarioActual } from '../services/authApi';
 
 const AuthContext = createContext(null);
 
@@ -37,7 +37,7 @@ export function AuthProvider({ children }) {
         throw new Error('Acceso denegado. Esta app es solo para repartidores.');
       }
 
-      // Guardar en estado y AsyncStorage
+      // Guardar en estado y AsyncStorage (con accessToken incluido)
       setUser(userData);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
 
@@ -57,10 +57,46 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      if (!user) {
+        console.warn('No hay usuario para refrescar');
+        return;
+      }
+
+      console.log('🔄 Refrescando datos del usuario...');
+      const userData = await obtenerUsuarioActual();
+
+      // Mantener el accessToken en el objeto usuario para compatibilidad con apiClient
+      const updatedUser = {
+        ...userData,
+        accessToken: user.accessToken
+      };
+
+      // Guardar datos actualizados
+      setUser(updatedUser);
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+
+      console.log('✅ Datos del usuario actualizados');
+      console.log('🚛 Carritos actualizados:', updatedUser.repartidor?.carritos);
+
+      return updatedUser;
+    } catch (error) {
+      console.error('Error al refrescar usuario:', error);
+      // Si el token expiró, hacer logout
+      if (error.message.includes('Token') || error.message.includes('401')) {
+        console.warn('Token expirado, cerrando sesión');
+        await logout();
+      }
+      throw error;
+    }
+  };
+
   const value = {
     user,
     login,
     logout,
+    refreshUser,
     loading,
     isAuthenticated: !!user
   };

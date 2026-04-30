@@ -284,6 +284,9 @@ export function convertirPedidoBackend(pedidoBackend) {
     latitud: pedidoBackend.latitud || null,
     longitud: pedidoBackend.longitud || null,
 
+    // Dirección corregida por el repartidor (si la original estaba mal)
+    direccionCorregida: pedidoBackend.direccionCorregida || null,
+
     // Datos de entrega/no entrega
     nombreRecibe: pedidoBackend.nombreReceptor || '',
     relacionRecibe: pedidoBackend.recibidoPor || '',
