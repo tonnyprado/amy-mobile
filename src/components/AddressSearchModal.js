@@ -17,14 +17,24 @@ import { geocodificarYActualizarPedido } from '../services/geocodingApi';
  * Permite al repartidor corregir o confirmar direcciones de pedidos sin coordenadas
  */
 export default function AddressSearchModal({ visible, onClose, pedido, onSuccess }) {
-  // Pre-cargar la dirección corregida si existe, sino la original
-  const [direccion, setDireccion] = useState(pedido?.direccionCorregida || pedido?.direccion || '');
+  // Estados para campos individuales de dirección
+  const [calle, setCalle] = useState('');
+  const [numero, setNumero] = useState('');
+  const [colonia, setColonia] = useState('');
+  const [codigoPostal, setCodigoPostal] = useState('');
+  const [municipio, setMunicipio] = useState('');
+  const [ciudad, setCiudad] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
 
   const handleBuscar = async () => {
-    if (!direccion.trim()) {
-      Alert.alert('Error', 'Ingresa una dirección para buscar');
+    // Validar que al menos haya un campo con información
+    const tieneDatos = calle.trim() || numero.trim() || colonia.trim() ||
+                       codigoPostal.trim() || municipio.trim() || ciudad.trim();
+
+    if (!tieneDatos) {
+      Alert.alert('Error', 'Ingresa al menos un campo de la dirección para buscar');
       return;
     }
 
@@ -34,7 +44,14 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
     try {
       const result = await geocodificarYActualizarPedido(
         pedido.id,
-        direccion,
+        {
+          calle: calle.trim() || undefined,
+          numero: numero.trim() || undefined,
+          colonia: colonia.trim() || undefined,
+          codigoPostal: codigoPostal.trim() || undefined,
+          municipio: municipio.trim() || undefined,
+          ciudad: ciudad.trim() || undefined,
+        },
         'Monterrey, Nuevo León, México'
       );
 
@@ -69,7 +86,13 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
   };
 
   const handleCerrar = () => {
-    setDireccion(pedido?.direccionCorregida || pedido?.direccion || '');
+    // Limpiar campos
+    setCalle('');
+    setNumero('');
+    setColonia('');
+    setCodigoPostal('');
+    setMunicipio('');
+    setCiudad('');
     setResultado(null);
     onClose();
   };
@@ -116,25 +139,78 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
               </View>
             )}
 
-            {/* Input de búsqueda */}
+            {/* Campos individuales de dirección */}
             <View style={styles.searchSection}>
               <Text style={styles.label}>
                 {pedido?.direccionCorregida ? 'Modificar dirección corregida:' : 'Corregir dirección:'}
               </Text>
-              <TextInput
-                style={styles.input}
-                value={direccion}
-                onChangeText={setDireccion}
-                placeholder="Ej: Orense 125, Valencia, Monterrey"
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
               <Text style={styles.hint}>
-                💡 {pedido?.direccionCorregida
-                  ? 'Puedes modificar la dirección corregida anteriormente'
-                  : 'Escribe la dirección correcta para obtener coordenadas precisas'}
+                💡 Llena los campos que conozcas. No es necesario completar todos.
               </Text>
+
+              <View style={styles.formRow}>
+                <View style={styles.formFieldLarge}>
+                  <Text style={styles.fieldLabel}>Calle</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={calle}
+                    onChangeText={setCalle}
+                    placeholder="Ej: Orense, Av. Universidad"
+                  />
+                </View>
+                <View style={styles.formFieldSmall}>
+                  <Text style={styles.fieldLabel}>Número</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={numero}
+                    onChangeText={setNumero}
+                    placeholder="125"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
+                <View style={styles.formFieldLarge}>
+                  <Text style={styles.fieldLabel}>Colonia</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={colonia}
+                    onChangeText={setColonia}
+                    placeholder="Ej: Valencia, Residencial"
+                  />
+                </View>
+                <View style={styles.formFieldSmall}>
+                  <Text style={styles.fieldLabel}>C.P.</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={codigoPostal}
+                    onChangeText={setCodigoPostal}
+                    placeholder="67140"
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+
+              <View style={styles.formRow}>
+                <View style={styles.formFieldHalf}>
+                  <Text style={styles.fieldLabel}>Municipio</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={municipio}
+                    onChangeText={setMunicipio}
+                    placeholder="Ej: San Pedro"
+                  />
+                </View>
+                <View style={styles.formFieldHalf}>
+                  <Text style={styles.fieldLabel}>Ciudad</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={ciudad}
+                    onChangeText={setCiudad}
+                    placeholder="Monterrey"
+                  />
+                </View>
+              </View>
             </View>
 
             {/* Resultado */}
@@ -312,7 +388,36 @@ const styles = StyleSheet.create({
   hint: {
     fontSize: 12,
     color: '#64748b',
-    marginTop: 6,
+    marginBottom: 12,
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  formFieldLarge: {
+    flex: 2,
+  },
+  formFieldSmall: {
+    flex: 1,
+  },
+  formFieldHalf: {
+    flex: 1,
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
+    marginBottom: 4,
+  },
+  fieldInput: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+    color: '#0f172a',
   },
   resultado: {
     backgroundColor: '#f0fdf4',

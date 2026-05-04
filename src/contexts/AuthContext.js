@@ -32,9 +32,9 @@ export function AuthProvider({ children }) {
     try {
       const userData = await loginApi(username, password);
 
-      // Verificar que sea repartidor
-      if (userData.rol !== 'REPARTIDOR') {
-        throw new Error('Acceso denegado. Esta app es solo para repartidores.');
+      // Verificar que sea repartidor o administrador
+      if (userData.rol !== 'REPARTIDOR' && userData.rol !== 'ADMIN') {
+        throw new Error('Acceso denegado. Esta app es solo para repartidores y administradores.');
       }
 
       // Guardar en estado y AsyncStorage (con accessToken incluido)

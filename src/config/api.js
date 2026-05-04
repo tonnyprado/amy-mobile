@@ -7,8 +7,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Base URL de la API - configurar según entorno
-const DEV_API_URL = 'http://192.168.0.9:8080'; // Tu IP local + puerto del backend
-const PROD_API_URL = 'https://amy-api.railway.app'; // Cambiar por tu URL de producción
+const DEV_API_URL = 'http://192.168.1.173:8080'; // Tu IP local + puerto del backend
+const PROD_API_URL = 'https://controlminutasapi-production.up.railway.app'; // Railway backend
 
 export const API_BASE_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;
 

@@ -17,8 +17,9 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "AMY Delivery necesita tu ubicación para rastrear entregas en tiempo real.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "AMY Delivery necesita tu ubicación en segundo plano para rastrear entregas.",
-        "NSCameraUsageDescription": "Se requiere acceso a la cámara para tomar fotos de evidencia de entrega.",
-        "NSPhotoLibraryUsageDescription": "Se requiere acceso a la galería para seleccionar fotos de evidencia."
+        "NSCameraUsageDescription": "AMY Delivery necesita acceso a la cámara para escanear etiquetas de cajas y tomar fotos de evidencia.",
+        "NSPhotoLibraryUsageDescription": "Se requiere acceso a la galería para seleccionar fotos de evidencia.",
+        "NSMicrophoneUsageDescription": "AMY Delivery necesita acceso al micrófono para reconocimiento de voz."
       }
     },
     "android": {
@@ -65,8 +66,18 @@
         {
           "photosPermission": "Permite a AMY Delivery acceder a tu galería para seleccionar fotos."
         }
+      ],
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "AMY Delivery necesita acceso a la cámara para escanear etiquetas de cajas.",
+          "enableMicrophonePermission": false
+        }
       ]
     ],
+    "updates": {
+      "enabled": false
+    },
     "extra": {
       "eas": {
         "projectId": "tu-project-id-aqui"

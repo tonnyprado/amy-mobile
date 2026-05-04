@@ -7,6 +7,9 @@ import LoginScreen from './src/screens/LoginScreen';
 import PaquetesScreen from './src/screens/PaquetesScreen';
 import PaqueteDetalleScreen from './src/screens/PaqueteDetalleScreen';
 import NavigationMapScreen from './src/screens/NavigationMapScreen';
+import AdminScreen from './src/screens/AdminScreen';
+import BoxScannerScreen from './src/screens/BoxScannerScreen';
+import RepartidoresScreen from './src/screens/RepartidoresScreen';
 import LoadingScreen from './src/components/LoadingScreen';
 
 const Stack = createNativeStackNavigator();
@@ -28,8 +31,30 @@ function AppNavigator() {
       {!user ? (
         // No autenticado - Solo Login
         <Stack.Screen name="Login" component={LoginScreen} />
+      ) : user.rol === 'ADMIN' ? (
+        // Autenticado como Admin - Pantallas de administración
+        <>
+          <Stack.Screen name="Admin" component={AdminScreen} />
+          <Stack.Screen
+            name="BoxScanner"
+            component={BoxScannerScreen}
+            options={{
+              headerShown: false,
+              presentation: 'modal',
+              animation: 'slide_from_bottom',
+            }}
+          />
+          <Stack.Screen
+            name="Repartidores"
+            component={RepartidoresScreen}
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
+        </>
       ) : (
-        // Autenticado - Pantallas principales
+        // Autenticado como Repartidor - Pantallas principales
         <>
           <Stack.Screen name="Paquetes" component={PaquetesScreen} />
           <Stack.Screen

@@ -73,7 +73,7 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.logoText}>📦</Text>
           </View>
           <Text style={styles.title}>AMY Delivery</Text>
-          <Text style={styles.subtitle}>Portal de Repartidores</Text>
+          <Text style={styles.subtitle}>Portal de Repartidores y Administradores</Text>
         </View>
 
         <View style={styles.form}>

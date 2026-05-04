@@ -33,19 +33,35 @@ export const geocodificarDireccion = async (direccion, region = null) => {
 /**
  * Geocodifica y actualiza un pedido
  * @param {number} pedidoId - ID del pedido
- * @param {string} direccion - Dirección a geocodificar
+ * @param {string|Object} direccionOCampos - Dirección completa (string) o campos individuales (object)
  * @param {string} region - Región opcional
  * @returns {Promise<{latitud: number, longitud: number, direccionFormateada: string, confianza: number, exitoso: boolean}>}
  */
-export const geocodificarYActualizarPedido = async (pedidoId, direccion, region = null) => {
+export const geocodificarYActualizarPedido = async (pedidoId, direccionOCampos, region = null) => {
   try {
     console.log('🗺️ Geocodificando pedido:', pedidoId);
 
-    const response = await api.post('/api/geocoding/geocode-pedido', {
-      pedidoId,
-      direccion,
-      region
-    });
+    let requestBody = { pedidoId, region };
+
+    // Si es un string, es dirección completa
+    if (typeof direccionOCampos === 'string') {
+      requestBody.direccion = direccionOCampos;
+    }
+    // Si es un objeto, son campos individuales
+    else if (typeof direccionOCampos === 'object' && direccionOCampos !== null) {
+      requestBody = {
+        ...requestBody,
+        calle: direccionOCampos.calle,
+        numero: direccionOCampos.numero,
+        colonia: direccionOCampos.colonia,
+        codigoPostal: direccionOCampos.codigoPostal,
+        municipio: direccionOCampos.municipio,
+        ciudad: direccionOCampos.ciudad,
+      };
+      console.log('📋 Usando campos individuales:', requestBody);
+    }
+
+    const response = await api.post('/api/geocoding/geocode-pedido', requestBody);
 
     const data = await response.json();
 
