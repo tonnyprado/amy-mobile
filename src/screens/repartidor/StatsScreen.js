@@ -26,7 +26,6 @@ export default function StatsScreen({ theme, stats }) {
     <SectionShell bg={theme.accent} label="03 Estadísticas" theme={theme} padded={false}>
       <View style={{ paddingTop: 56 }}>
         <View style={styles.header}>
-          <Text style={[styles.kicker, { color: theme.ink }]}>03 — Tu desempeño</Text>
           <Text style={[styles.title, { color: theme.ink }]}>Esta semana</Text>
         </View>
 
@@ -221,7 +220,7 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     borderRadius: 22,
-    padding: 18,
+    padding: 20,
     overflow: 'hidden',
   },
   heroHeader: {
@@ -246,7 +245,7 @@ const styles = StyleSheet.create({
     fontSize: 92,
     fontWeight: '700',
     letterSpacing: -4,
-    lineHeight: 78,
+    lineHeight: 96,
     fontFamily: FONTS.displayExtraBold,
     marginTop: 4,
   },
@@ -307,7 +306,7 @@ const styles = StyleSheet.create({
   statGridCell: {
     width: '48%',
     borderRadius: 16,
-    padding: 12,
+    padding: 14,
   },
   statGridHeader: {
     flexDirection: 'row',
@@ -330,7 +329,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     letterSpacing: -1,
-    lineHeight: 28,
+    lineHeight: 32,
     fontFamily: FONTS.bodyBold,
   },
   statGridUnit: {

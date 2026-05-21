@@ -41,7 +41,7 @@ export default function OrdersScreen({ theme, pedidos = [], onPedidoPress }) {
       <View style={{ paddingTop: 56 }}>
         <SectionHeader
           theme={theme}
-          kicker={`02 — Hoy, ${pedidos.length} paquetes`}
+          kicker=""
           title={
             <>
               <Text>Pedidos{'\n'}del día</Text>
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     fontFamily: FONTS.bodyBold,
-    lineHeight: 32,
+    lineHeight: 36,
   },
   statStrip: {
     marginHorizontal: 20,
@@ -297,8 +297,8 @@ const styles = StyleSheet.create({
   },
   statCell: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 6,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
     alignItems: 'center',
   },
   statIcon: {
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 22,
     fontWeight: '700',
-    lineHeight: 22,
+    lineHeight: 26,
     fontFamily: FONTS.bodyBold,
   },
   statLabel: {
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   orderCard: {
     borderRadius: 18,
-    padding: 14,
+    padding: 16,
     flexDirection: 'row',
     gap: 14,
     alignItems: 'center',
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.3,
-    lineHeight: 18,
+    lineHeight: 20,
     fontFamily: FONTS.display,
   },
   orderDetails: {

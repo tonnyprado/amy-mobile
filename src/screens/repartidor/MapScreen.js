@@ -475,6 +475,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 2,
     letterSpacing: -0.6,
+    lineHeight: 30,
     fontFamily: FONTS.display,
   },
   headerActions: {
@@ -567,8 +568,8 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     marginBottom: 10,
     borderWidth: 1,
     shadowColor: '#000',
@@ -610,7 +611,7 @@ const styles = StyleSheet.create({
   },
   nextStopCard: {
     borderRadius: 22,
-    padding: 18,
+    padding: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 18 },
     shadowOpacity: 0.22,
