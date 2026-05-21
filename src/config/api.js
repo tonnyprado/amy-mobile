@@ -7,7 +7,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Base URL de la API - configurar según entorno
-const DEV_API_URL_LOCAL = 'http://192.168.0.27:8080'; // Tu IP local + puerto del backend
+const DEV_API_URL_LOCAL = 'http://192.168.0.14:8080'; // Tu IP local + puerto del backend
 const DEV_API_URL_RAILWAY = 'https://controlminutasapi-production.up.railway.app'; // Railway backend
 const PROD_API_URL = 'https://controlminutasapi-production.up.railway.app'; // Railway backend
 
@@ -16,8 +16,22 @@ export const API_BASE_URL = __DEV__ ? DEV_API_URL_LOCAL : PROD_API_URL;
 
 const STORAGE_KEY = '@amy_user';
 
+// Timeout para peticiones (3 segundos para datos, 10 segundos para auth)
+const REQUEST_TIMEOUT = 3000;
+const AUTH_TIMEOUT = 10000;
+
 function isFormDataBody(body) {
   return typeof FormData !== 'undefined' && body instanceof FormData;
+}
+
+// Helper para agregar timeout a fetch
+function fetchWithTimeout(url, options = {}, timeout = REQUEST_TIMEOUT) {
+  return Promise.race([
+    fetch(url, options),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Request timeout')), timeout)
+    )
+  ]);
 }
 
 // Helper para hacer peticiones HTTP
@@ -55,7 +69,11 @@ export const apiClient = {
       console.warn('⚠️ No se pudo obtener token:', error);
     }
 
-    return fetch(url, options);
+    // Usar timeout más largo para autenticación (10s) y normal para otros (3s)
+    const isAuthEndpoint = endpoint.includes('/login') || endpoint.includes('/auth');
+    const timeout = isAuthEndpoint ? AUTH_TIMEOUT : REQUEST_TIMEOUT;
+
+    return fetchWithTimeout(url, options, timeout);
   },
 
   /**

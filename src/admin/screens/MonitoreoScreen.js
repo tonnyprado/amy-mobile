@@ -3,21 +3,30 @@
  * Muestra estado actual de repartidores y entregas en tiempo real
  */
 
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Lightbulb, ChevronRight } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
+import { Lightbulb, ChevronRight, Search, X } from 'lucide-react-native';
 import { theme, FONTS, FONT_SIZES, SPACING, RADIUS, SHADOWS } from '../theme';
-import { REPARTIDORES, STATS } from '../data';
+import { STATS } from '../data'; // Solo para fallback
 import AdminBadge from '../components/AdminBadge';
 import { SectionShell } from '../components/primitives';
 import CriticalAlert from './monitoreo/CriticalAlert';
 import MetricCard from './monitoreo/MetricCard';
 import ProgressCard from './monitoreo/ProgressCard';
 
-export default function MonitoreoScreen({ userName = 'Admin', onOpenAnalysis }) {
-  const data = STATS;
+export default function MonitoreoScreen({ data, repartidores = [], userName = 'Admin', onOpenAnalysis }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+
+  // Usar datos pasados como props o fallback
+  const stats = data || STATS;
   const hora = new Date().getHours();
   const esDespuesDeLas10 = hora >= 10;
+
+  // Filtrar repartidores por búsqueda
+  const filteredRepartidores = repartidores.filter(rep =>
+    rep.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <SectionShell style={styles.container}>
@@ -25,7 +34,37 @@ export default function MonitoreoScreen({ userName = 'Admin', onOpenAnalysis }) 
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <AdminBadge />
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={() => setShowSearch(!showSearch)}
+          >
+            {showSearch ? (
+              <X size={20} color={theme.ink} strokeWidth={2.5} />
+            ) : (
+              <Search size={20} color={theme.ink} strokeWidth={2.5} />
+            )}
+          </TouchableOpacity>
         </View>
+
+        {/* Search bar */}
+        {showSearch && (
+          <View style={styles.searchContainer}>
+            <Search size={18} color={theme.muted} strokeWidth={2.5} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar repartidor..."
+              placeholderTextColor={theme.muted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <X size={18} color={theme.muted} strokeWidth={2.5} />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         <Text style={styles.kicker}>02 — Monitoreo</Text>
         <Text style={styles.greeting}>Hola, {userName} 👋</Text>
@@ -44,21 +83,21 @@ export default function MonitoreoScreen({ userName = 'Admin', onOpenAnalysis }) 
         <View style={styles.metricsGrid}>
           <MetricCard
             label="Tasa de éxito"
-            value={data.successRate}
+            value={stats.successRate}
             showBar={false}
             color={theme.successFg}
           />
           <MetricCard
             label="Entregados"
-            value={data.delivered}
-            total={data.assigned}
+            value={stats.delivered}
+            total={stats.assigned}
             showBar={true}
             color={theme.ink}
           />
           <MetricCard
             label="Activos"
-            value={data.activeDrivers}
-            total={data.totalDrivers}
+            value={stats.activeDrivers}
+            total={stats.totalDrivers}
             showBar={false}
             color={theme.infoFg}
           />
@@ -68,12 +107,12 @@ export default function MonitoreoScreen({ userName = 'Admin', onOpenAnalysis }) 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Estado del equipo</Text>
           <Text style={styles.sectionSubtext}>
-            {data.activeDrivers} de {data.totalDrivers} en ruta
+            {stats.activeDrivers} de {stats.totalDrivers} en ruta
           </Text>
         </View>
 
         {/* Cards de progreso por repartidor */}
-        {(REPARTIDORES || []).map((rep) => (
+        {filteredRepartidores.map((rep) => (
           <ProgressCard key={rep.id} repartidor={rep} />
         ))}
 
@@ -113,7 +152,36 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
+  },
+  searchButton: {
+    width: 44,
+    height: 44,
+    borderRadius: RADIUS.full,
+    backgroundColor: theme.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...SHADOWS.card,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.surface,
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+    ...SHADOWS.card,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: FONTS.body,
+    fontSize: FONT_SIZES.base,
+    color: theme.ink,
   },
   kicker: {
     fontFamily: FONTS.body,

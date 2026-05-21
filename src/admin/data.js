@@ -6,6 +6,7 @@
 export const REPARTIDORES = [
   {
     id: 'r1',
+    userId: 1, // ID del usuario en el backend
     name: 'Alberto Cruz',
     tag: 'AL',
     phone: '+52 55 1234 5678',
@@ -17,6 +18,7 @@ export const REPARTIDORES = [
   },
   {
     id: 'r2',
+    userId: 2,
     name: 'Alday Pérez',
     tag: 'AD',
     phone: '+52 55 2345 6789',
@@ -28,6 +30,7 @@ export const REPARTIDORES = [
   },
   {
     id: 'r3',
+    userId: 3,
     name: 'Alejandro Vidal',
     tag: 'AJ',
     phone: null,
@@ -39,6 +42,7 @@ export const REPARTIDORES = [
   },
   {
     id: 'r4',
+    userId: 4,
     name: 'Alexis Romero',
     tag: 'AX',
     phone: null,
@@ -50,6 +54,7 @@ export const REPARTIDORES = [
   },
   {
     id: 'r5',
+    userId: 5,
     name: 'Brayan Lugo',
     tag: 'BL',
     phone: '+52 55 3456 7890',
@@ -61,6 +66,7 @@ export const REPARTIDORES = [
   },
   {
     id: 'r6',
+    userId: 6,
     name: 'Carlos Méndez',
     tag: 'CM',
     phone: '+52 55 4567 8901',

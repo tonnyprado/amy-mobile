@@ -8,9 +8,8 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { theme } from '../theme';
 
 const DEFAULT_SCREENS = [
-  { id: 'stats', name: 'Stats' },
-  { id: 'monitoreo', name: 'Monitoreo' },
-  { id: 'repartidores', name: 'Repartidores' },
+  { id: 'stats', name: 'Estadísticas' },
+  { id: 'chat', name: 'Chat' },
 ];
 
 export default function SideRail({ activeSection = 0, screens = DEFAULT_SCREENS, onPress }) {

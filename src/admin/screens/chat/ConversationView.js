@@ -3,7 +3,7 @@
  * Muestra mensajes con un repartidor específico
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,45 +14,41 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
+  Linking,
 } from 'react-native';
-import { ChevronLeft, Send, Megaphone } from 'lucide-react-native';
+import { ChevronLeft, Send, Megaphone, Phone } from 'lucide-react-native';
 import { theme, FONTS, FONT_SIZES, SPACING, RADIUS } from '../../theme';
-import { ADMIN_MESSAGES } from '../../data';
 import MessageBubble from './MessageBubble';
 import { Pill } from '../../components/primitives';
+import useConversacion from '../../hooks/useConversacion';
 
 export default function ConversationView({ repartidor, onBack, onSendAnnouncement }) {
   const [messageText, setMessageText] = useState('');
-  const [messages, setMessages] = useState([]);
   const flatListRef = useRef(null);
 
-  useEffect(() => {
-    // Cargar mensajes del repartidor
-    const repMessages = ADMIN_MESSAGES[repartidor.id] || [];
-    setMessages(repMessages);
-  }, [repartidor.id]);
+  // Usar hook para manejar la conversación
+  const {
+    mensajes,
+    cargando,
+    enviando,
+    error,
+    enviarMensaje
+  } = useConversacion(repartidor.userId);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (messageText.trim().length === 0) return;
 
-    const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const exito = await enviarMensaje(messageText);
 
-    const newMessage = {
-      id: `msg-${Date.now()}`,
-      type: 'me',
-      text: messageText.trim(),
-      time: timeStr,
-      read: false,
-    };
+    if (exito) {
+      setMessageText('');
 
-    setMessages((prev) => [...prev, newMessage]);
-    setMessageText('');
-
-    // Scroll to bottom
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+      // Scroll to bottom
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
   };
 
   const handleAnnouncement = () => {
@@ -71,6 +67,31 @@ export default function ConversationView({ repartidor, onBack, onSendAnnouncemen
         },
       ]
     );
+  };
+
+  const handleCall = () => {
+    if (!repartidor.phone || repartidor.phone.trim() === '') {
+      Alert.alert(
+        'Sin teléfono',
+        'Este repartidor aún no tiene teléfono registrado',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    const phoneUrl = `tel:${repartidor.phone}`;
+    Linking.canOpenURL(phoneUrl)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(phoneUrl);
+        } else {
+          Alert.alert('Error', 'No se puede realizar la llamada en este dispositivo');
+        }
+      })
+      .catch((err) => {
+        console.error('Error abriendo marcador:', err);
+        Alert.alert('Error', 'No se pudo abrir el marcador telefónico');
+      });
   };
 
   const getStatusColor = (status) => {
@@ -114,23 +135,38 @@ export default function ConversationView({ repartidor, onBack, onSendAnnouncemen
           </Pill>
         </View>
 
+        <TouchableOpacity onPress={handleCall} style={styles.callButton}>
+          <Phone size={20} color={theme.successFg} strokeWidth={2.2} />
+        </TouchableOpacity>
+
         <TouchableOpacity onPress={handleAnnouncement} style={styles.announcementButton}>
           <Megaphone size={20} color={theme.accent} strokeWidth={2.2} />
         </TouchableOpacity>
       </View>
 
       {/* Messages list */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <MessageBubble message={item} />}
-        contentContainerStyle={styles.messagesList}
-        showsVerticalScrollIndicator={false}
-        onContentSizeChange={() => {
-          flatListRef.current?.scrollToEnd({ animated: false });
-        }}
-      />
+      {cargando ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.accent} />
+          <Text style={styles.loadingText}>Cargando mensajes...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Error: {error}</Text>
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={mensajes}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <MessageBubble message={item} />}
+          contentContainerStyle={styles.messagesList}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => {
+            flatListRef.current?.scrollToEnd({ animated: false });
+          }}
+        />
+      )}
 
       {/* Input */}
       <View style={styles.inputContainer}>
@@ -147,17 +183,21 @@ export default function ConversationView({ repartidor, onBack, onSendAnnouncemen
         <TouchableOpacity
           style={[
             styles.sendButton,
-            messageText.trim().length === 0 && styles.sendButtonDisabled,
+            (messageText.trim().length === 0 || enviando) && styles.sendButtonDisabled,
           ]}
           onPress={handleSend}
-          disabled={messageText.trim().length === 0}
+          disabled={messageText.trim().length === 0 || enviando}
           activeOpacity={0.7}
         >
-          <Send
-            size={20}
-            color={messageText.trim().length > 0 ? theme.surface : theme.muted}
-            strokeWidth={2.2}
-          />
+          {enviando ? (
+            <ActivityIndicator size="small" color={theme.muted} />
+          ) : (
+            <Send
+              size={20}
+              color={messageText.trim().length > 0 ? theme.surface : theme.muted}
+              strokeWidth={2.2}
+            />
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -202,6 +242,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
+  callButton: {
+    width: 40,
+    height: 40,
+    borderRadius: RADIUS.full,
+    backgroundColor: `${theme.successFg}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: SPACING.sm,
+  },
   announcementButton: {
     width: 40,
     height: 40,
@@ -245,5 +294,28 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: theme.canvas,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  loadingText: {
+    fontFamily: FONTS.body,
+    fontSize: FONT_SIZES.base,
+    color: theme.muted,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  errorText: {
+    fontFamily: FONTS.body,
+    fontSize: FONT_SIZES.base,
+    color: theme.dangerFg,
+    textAlign: 'center',
   },
 });

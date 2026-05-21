@@ -244,12 +244,27 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
                 recibidoPor: relacionRecibe || null
               });
 
-              // Navegar de regreso - la lista se actualizará automáticamente
-              Alert.alert(
-                'Éxito',
-                `Pedido marcado como ${ESTADOS_CONFIG[nuevoEstado].label}`,
-                [{ text: 'OK', onPress: () => navigation.goBack() }]
-              );
+              // Si fue entregado, mostrar pantalla de éxito
+              if (nuevoEstado === 'ENTREGADO') {
+                navigation.replace('DeliverySuccess', {
+                  orderDetails: {
+                    orderCode: paquete.numeroGuia || `ORD-${paquete.id}`,
+                    deliveryMan: nombreRecibe || 'Repartidor',
+                    recipient: paquete.destinatario || 'Cliente',
+                    from: 'Centro de Distribución',
+                    fromAddress: 'Almacén AMY Business',
+                    to: paquete.direccion?.substring(0, 30) || 'Destino',
+                    toAddress: paquete.direccion || 'Sin dirección',
+                  }
+                });
+              } else {
+                // Para otros estados, mostrar alerta y volver
+                Alert.alert(
+                  'Éxito',
+                  `Pedido marcado como ${ESTADOS_CONFIG[nuevoEstado].label}`,
+                  [{ text: 'OK', onPress: () => navigation.goBack() }]
+                );
+              }
             } catch (error) {
               console.error('Error:', error);
               Alert.alert('Error', 'No se pudo actualizar el estado. Intenta de nuevo.');

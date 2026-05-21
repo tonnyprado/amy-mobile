@@ -2,9 +2,11 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useFonts, Montserrat_700Bold, Montserrat_800ExtraBold } from '@expo-google-fonts/montserrat';
+import { Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold } from '@expo-google-fonts/manrope';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import { AnnouncementProvider } from './src/contexts/AnnouncementContext';
-import LoginScreen from './src/screens/LoginScreen';
+import LoginFlowWrapper from './src/screens/auth/LoginFlowWrapper';
 import RepartidorMainScreenWrapper from './src/screens/repartidor/RepartidorMainScreenWrapper';
 import PaqueteDetalleScreen from './src/screens/PaqueteDetalleScreen';
 import AdminApp from './src/admin/AdminApp';
@@ -16,6 +18,7 @@ import EstadisticasIncidenciasScreen from './src/screens/EstadisticasIncidencias
 import ChatInboxScreen from './src/screens/chat/ChatInboxScreen';
 import ChatConversationScreen from './src/screens/chat/ChatConversationScreen';
 import ProfileScreen from './src/screens/repartidor/ProfileScreen';
+import DeliverySuccessScreen from './src/screens/repartidor/DeliverySuccessScreen';
 import LoadingScreen from './src/components/LoadingScreen';
 import {
   addPushNotificationReceivedListener,
@@ -28,6 +31,14 @@ const Stack = createNativeStackNavigator();
 
 function AppNavigator({ navigationRef }) {
   const { user, loading } = useAuth();
+  const [fontsLoaded] = useFonts({
+    Montserrat_700Bold,
+    Montserrat_800ExtraBold,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+  });
 
   React.useEffect(() => {
     if (!user) {
@@ -56,7 +67,7 @@ function AppNavigator({ navigationRef }) {
     };
   }, [navigationRef, user]);
 
-  if (loading) {
+  if (loading || !fontsLoaded) {
     return <LoadingScreen message="Iniciando..." />;
   }
 
@@ -69,7 +80,7 @@ function AppNavigator({ navigationRef }) {
     >
       {!user ? (
         // No autenticado - Solo Login
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Login" component={LoginFlowWrapper} />
       ) : user.rol === 'ADMIN' ? (
         // Autenticado como Admin - Nueva UI de administración
         <>
@@ -162,6 +173,15 @@ function AppNavigator({ navigationRef }) {
               headerTitleStyle: {
                 fontWeight: '700',
               },
+            }}
+          />
+          <Stack.Screen
+            name="DeliverySuccess"
+            component={DeliverySuccessScreen}
+            options={{
+              headerShown: false,
+              animation: 'fade',
+              presentation: 'transparentModal',
             }}
           />
           <Stack.Screen
