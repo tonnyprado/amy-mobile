@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, Animated } from 'react-native';
+import theme from '../theme';
 
 /**
- * Componente Input reutilizable
+ * Componente Input reutilizable con animaciones
  * @param {Object} props
  * @param {string} props.label - Etiqueta del input
  * @param {string} props.value - Valor del input
@@ -22,18 +23,57 @@ export default function Input({
   style,
   ...props
 }) {
+  const [isFocused, setIsFocused] = useState(false);
+  const focusAnim = React.useRef(new Animated.Value(0)).current;
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    Animated.timing(focusAnim, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+    Animated.timing(focusAnim, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const borderColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [theme.colors.border, theme.colors.primary],
+  });
+
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <TextInput
-        style={[styles.input, error && styles.inputError]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#94a3b8"
-        secureTextEntry={secureTextEntry}
-        {...props}
-      />
+      <Animated.View
+        style={[
+          styles.inputContainer,
+          error && styles.inputContainerError,
+          {
+            borderColor: error ? theme.colors.error : borderColor,
+            ...theme.shadows.sm,
+          },
+        ]}
+      >
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholder={placeholder}
+          placeholderTextColor={theme.colors.textMuted}
+          secureTextEntry={secureTextEntry}
+          {...props}
+        />
+      </Animated.View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
@@ -41,31 +81,36 @@ export default function Input({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 6,
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+    letterSpacing: 0.3,
+  },
+  inputContainer: {
+    backgroundColor: theme.colors.surface,
+    borderWidth: 2,
+    borderRadius: theme.borderRadius.md,
+    overflow: 'hidden',
+  },
+  inputContainerError: {
+    borderColor: theme.colors.error,
   },
   input: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#0f172a',
-    minHeight: 48,
-  },
-  inputError: {
-    borderColor: '#ef4444',
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.textPrimary,
+    fontWeight: theme.typography.weights.medium,
+    minHeight: 56,
   },
   errorText: {
-    fontSize: 12,
-    color: '#ef4444',
-    marginTop: 4,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.error,
+    marginTop: theme.spacing.sm,
+    fontWeight: theme.typography.weights.semibold,
   },
 });

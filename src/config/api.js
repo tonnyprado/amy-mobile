@@ -7,12 +7,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Base URL de la API - configurar según entorno
-const DEV_API_URL = 'http://192.168.1.173:8080'; // Tu IP local + puerto del backend
+const DEV_API_URL_LOCAL = 'http://192.168.0.27:8080'; // Tu IP local + puerto del backend
+const DEV_API_URL_RAILWAY = 'https://controlminutasapi-production.up.railway.app'; // Railway backend
 const PROD_API_URL = 'https://controlminutasapi-production.up.railway.app'; // Railway backend
 
-export const API_BASE_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;
+// Cambiar entre local y Railway en desarrollo
+export const API_BASE_URL = __DEV__ ? DEV_API_URL_LOCAL : PROD_API_URL;
 
 const STORAGE_KEY = '@amy_user';
+
+function isFormDataBody(body) {
+  return typeof FormData !== 'undefined' && body instanceof FormData;
+}
 
 // Helper para hacer peticiones HTTP
 export const apiClient = {
@@ -25,6 +31,12 @@ export const apiClient = {
   fetch: async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
     console.log('🔗 Fetch URL:', url);
+
+    // Agregar headers por defecto (compresión gzip y token JWT)
+    options.headers = {
+      'Accept-Encoding': 'gzip, deflate', // Optimización: habilitar compresión HTTP
+      ...options.headers,
+    };
 
     // Agregar token JWT si existe
     try {
@@ -60,14 +72,15 @@ export const apiClient = {
    * POST request
    */
   post: (endpoint, body, options = {}) => {
+    const isFormData = isFormDataBody(body);
     return apiClient.fetch(endpoint, {
       ...options,
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         ...options.headers,
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       },
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
     });
   },
 
@@ -75,14 +88,15 @@ export const apiClient = {
    * PUT request
    */
   put: (endpoint, body, options = {}) => {
+    const isFormData = isFormDataBody(body);
     return apiClient.fetch(endpoint, {
       ...options,
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
         ...options.headers,
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       },
-      body: JSON.stringify(body),
+      body: isFormData ? body : JSON.stringify(body),
     });
   },
 

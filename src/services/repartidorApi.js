@@ -31,28 +31,18 @@ export async function obtenerPedidosRepartidor(idRepartidor) {
  */
 export async function obtenerPedidosHoy(idRepartidor) {
   const endpoint = `/api/pedidos/repartidor/${idRepartidor}/hoy`;
-  console.log('🌐 API Request:', endpoint);
-
   const response = await apiClient.get(endpoint);
-
-  console.log('📡 Response status:', response.status);
-  console.log('📡 Response ok:', response.ok);
 
   // 403/404 = No hay pedidos asignados (esto es normal, no es error)
   if (response.status === 403 || response.status === 404) {
-    console.log('⚠️ Backend retornó 403/404 - Sin pedidos asignados');
     return [];
   }
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('❌ Error del backend:', errorText);
     throw new Error('Error al obtener pedidos de hoy');
   }
 
-  const data = await response.json();
-  console.log('📥 Data recibida:', data);
-  return data;
+  return await response.json();
 }
 
 /**
@@ -65,6 +55,22 @@ export async function obtenerPedidosPendientes(idRepartidor) {
 
   if (!response.ok) {
     throw new Error('Error al obtener pedidos pendientes');
+  }
+
+  return await response.json();
+}
+
+/**
+ * Cambia todos los pedidos PENDIENTES de un repartidor a EN_RUTA
+ * @param {string} idRepartidor - ID del repartidor (ej: "0001")
+ * @returns {Promise<Object>} Resultado con cantidad de pedidos actualizados
+ */
+export async function comenzarRuta(idRepartidor) {
+  const response = await apiClient.post(`/api/pedidos/repartidor/${idRepartidor}/comenzar-ruta`);
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'Error al comenzar la ruta');
   }
 
   return await response.json();
@@ -294,6 +300,11 @@ export function convertirPedidoBackend(pedidoBackend) {
     descripcionNoEntrega: pedidoBackend.descripcionNoEntrega || '',
     numeroIntento: pedidoBackend.numeroIntento || 1,
 
+    // Sistema AVISO
+    tipoPedido: pedidoBackend.tipoPedido || 'NORMAL',
+    subtipoAviso: pedidoBackend.subtipoAviso || null,
+    intentosAviso: pedidoBackend.intentosAviso || 0,
+
     // Evidencias (se mantiene estructura del frontend)
     evidencias: {
       fotos: [],
@@ -314,6 +325,7 @@ export default {
   obtenerPedidosHoy,
   obtenerPedidosPendientes,
   obtenerDetallePedido,
+  comenzarRuta,
 
   // Rastreo
   enviarUbicacion,

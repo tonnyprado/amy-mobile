@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Repartidor App — Rediseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  html, body {
+    margin: 0; padding: 0; min-height: 100%;
+    font-family: 'Montserrat', -apple-system, system-ui, sans-serif;
+    background: #ECECEC;
+    color: #111;
+    -webkit-font-smoothing: antialiased;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+
+  .stage {
+    min-height: 100vh; width: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 20px;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(0,0,0,0.04), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.06), transparent 50%),
+      #ECECEC;
+  }
+
+  /* iOS device frame */
+  .device {
+    width: 390px; height: 844px; border-radius: 48px;
+    overflow: hidden; position: relative;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.12);
+    font-family: 'Montserrat', -apple-system, system-ui, sans-serif;
+  }
+  .island {
+    position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+    width: 126px; height: 37px; border-radius: 24px; background: #000; z-index: 50;
+  }
+  .home-indicator {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 139px; height: 5px; border-radius: 100px;
+    background: rgba(0,0,0,0.28); z-index: 100; pointer-events: none;
+  }
+  .home-indicator.dark { background: rgba(255,255,255,0.7); }
+  .status-bar {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 100;
+    height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px 14px;
+  }
+  .status-bar .t { font-weight: 600; font-size: 16px; }
+  .status-bar.dark .t, .status-bar.dark svg { color: #fff; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; }
+
+  /* Inner snap scroll */
+  .snap {
+    position: absolute; inset: 0;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .snap::-webkit-scrollbar { display: none; }
+  .snap { scrollbar-width: none; }
+  .snap > section { scroll-snap-align: start; scroll-snap-stop: always; }
+
+  /* Side rail */
+  .rail {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    z-index: 70; display: flex; flex-direction: column; gap: 10px;
+    align-items: center;
+  }
+  .rail button {
+    width: 22px; height: 22px; padding: 0; border: none; background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; position: relative;
+  }
+  .rail .dot {
+    width: 6px; height: 6px; border-radius: 4px;
+    background: rgba(0,0,0,0.28); transition: all 0.25s ease;
+  }
+  .rail.dark .dot { background: rgba(0,0,0,0.45); }
+  .rail .dot.active { height: 22px; background: #0F0F0F; }
+  .rail.dark .dot.active { background: #0F0F0F; }
+  .rail .label {
+    position: absolute; right: 26px; top: 50%; transform: translateY(-50%);
+    background: #0F0F0F; color: #fff; padding: 4px 8px; border-radius: 6px;
+    font-size: 10px; font-family: 'Manrope', sans-serif;
+    letter-spacing: 0.6px; text-transform: uppercase;
+    white-space: nowrap; opacity: 0; pointer-events: none;
+    transition: opacity 0.15s;
+  }
+  .rail button:hover .label { opacity: 1; }
+
+  /* hide horizontal scrollbar on chips */
+  .chips::-webkit-scrollbar { display: none; }
+  .chips { scrollbar-width: none; }
+
+  /* Floating Chat FAB */
+  .chat-fab {
+    position: absolute; right: 18px; bottom: 54px; z-index: 80;
+    width: 58px; height: 58px; border-radius: 20px;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.18s ease;
+  }
+  .chat-fab:hover { transform: scale(1.04); }
+  .chat-fab:active { transform: scale(0.96); }
+  .chat-fab .badge {
+    position: absolute; top: -5px; right: -5px;
+    min-width: 22px; height: 22px; padding: 0 6px;
+    border-radius: 11px;
+    font-size: 11px; font-weight: 800;
+    font-family: 'Manrope', sans-serif; font-feature-settings: 'tnum';
+    display: flex; align-items: center; justify-content: center;
+    border: 2.5px solid;
+  }
+  .chat-fab .pulse {
+    position: absolute; inset: 0; border-radius: 20px;
+    pointer-events: none;
+    animation: pulse 2.2s ease-out infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0    var(--pulse-color, rgba(255,120,73,0.55)); }
+    70%  { box-shadow: 0 0 0 16px transparent; }
+    100% { box-shadow: 0 0 0 0    transparent; }
+  }
+
+  /* Incoming notification toast */
+  .toast {
+    position: absolute; top: 64px; left: 14px; right: 14px;
+    z-index: 110;
+    background: #0F0F0F; color: #fff;
+    border-radius: 18px; padding: 12px 14px 12px 12px;
+    display: flex; gap: 12px; align-items: center;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.32);
+    transform: translateY(-140%);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s;
+    cursor: pointer;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast .avatar {
+    width: 38px; height: 38px; border-radius: 19px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px; color: #0F0F0F;
+    flex-shrink: 0;
+  }
+  .toast .name { font-size: 13px; font-weight: 700; letter-spacing: -0.2px;
+                 display: flex; align-items: center; gap: 6px; }
+  .toast .msg  { font-size: 12px; opacity: 0.7; margin-top: 1px;
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                 max-width: 220px; }
+  .toast .time { font-size: 10px; color: rgba(255,255,255,0.45);
+                 font-family: 'Manrope', sans-serif; font-feature-settings: 'tnum';
+                 flex-shrink: 0; margin-left: auto; }
+
+  /* Chat drawer */
+  .drawer-scrim {
+    position: absolute; inset: 0; z-index: 85;
+    background: rgba(0,0,0,0.32);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity 0.28s ease;
+    pointer-events: none;
+  }
+  .drawer-scrim.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: absolute; top: 0; right: 0; bottom: 0;
+    width: 100%; z-index: 90;
+    background: #F4F4EF;
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: -12px 0 40px rgba(0,0,0,0.18);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .drawer.open { transform: translateX(0%); }
+  .drawer.dragging { transition: none; }
+  .drawer-handle {
+    position: absolute; top: 50%; left: 6px; transform: translateY(-50%);
+    width: 4px; height: 38px; border-radius: 4px;
+    background: rgba(0,0,0,0.12); z-index: 1;
+  }
+
+  /* Circle reveal when opening a conversation */
+  .reveal-circle {
+    position: absolute; inset: 0; z-index: 50;
+    pointer-events: none;
+    will-change: clip-path, opacity;
+    animation: reveal-expand 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes reveal-expand {
+    0%   { clip-path: circle(0%   at var(--rx) var(--ry)); opacity: 1; }
+    55%  { clip-path: circle(110% at var(--rx) var(--ry)); opacity: 1; }
+    100% { clip-path: circle(140% at var(--rx) var(--ry)); opacity: 0; }
+  }
+
+  /* Typing indicator dots */
+  @keyframes typing {
+    0%, 60%, 100% { transform: translateY(0);   opacity: 0.4; }
+    30%           { transform: translateY(-4px); opacity: 1;   }
+  }
+
+  /* Tweaks bare-bones (no external) */
+  .tw-panel {
+    position: fixed; right: 16px; bottom: 16px; z-index: 100;
+    background: rgba(255,255,255,0.96); backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,0,0,0.08); border-radius: 16px;
+    padding: 14px 14px 12px; width: 280px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+    font-family: 'Montserrat', sans-serif;
+  }
+  .tw-panel h4 {
+    margin: 0 0 10px; font-size: 11px; font-family: 'Manrope', sans-serif;
+    letter-spacing: 1.2px; text-transform: uppercase; color: #555;
+  }
+  .tw-row { margin-bottom: 12px; }
+  .tw-row > label {
+    font-size: 11px; font-family: 'Manrope', sans-serif;
+    letter-spacing: 0.6px; text-transform: uppercase; color: #666;
+    display: block; margin-bottom: 6px;
+  }
+  .tw-swatches { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+  .tw-swatches button {
+    border: 1px solid rgba(0,0,0,0.08); border-radius: 8px;
+    background: #fff; padding: 4px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 3px; align-items: center;
+    transition: all 0.12s;
+  }
+  .tw-swatches button.active { border-color: #111; box-shadow: 0 0 0 1px #111; }
+  .tw-swatches .row { display: flex; width: 100%; height: 22px; border-radius: 5px; overflow: hidden; }
+  .tw-swatches .row div { flex: 1; }
+  .tw-swatches .row div:first-child { flex: 2; }
+  .tw-swatches span { font-size: 9px; color: #444; font-family: 'Manrope', sans-serif; }
+  .tw-select {
+    width: 100%; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.1); background: #fff;
+    font-family: 'Montserrat', sans-serif; font-size: 13px; color: #111;
+  }
+  .tw-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; color: #333; padding: 4px 0;
+  }
+  .tw-toggle .sw {
+    width: 36px; height: 20px; border-radius: 12px; background: #ccc;
+    position: relative; transition: background 0.15s; cursor: pointer;
+  }
+  .tw-toggle .sw::after {
+    content: ''; position: absolute; left: 2px; top: 2px;
+    width: 16px; height: 16px; border-radius: 8px; background: #fff;
+    transition: left 0.15s;
+  }
+  .tw-toggle.on .sw { background: #0F0F0F; }
+  .tw-toggle.on .sw::after { left: 18px; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+
+  <script type="text/babel" data-presets="env,react">
+  (function(){
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // ─────────────────────────────────────────────────────────
+    // Icon wrapper around lucide
+    // ─────────────────────────────────────────────────────────
+    function Icon({ name, size = 18, strokeWidth = 2, color, style }) {
+      const ref = useRef(null);
+      useEffect(() => {
+        if (!ref.current || !window.lucide) return;
+        const data = window.lucide.icons?.[name] || window.lucide[toPascal(name)];
+        if (!data) { ref.current.innerHTML = ''; return; }
+        // lucide.icons[name] is array [tag, attrs, children]
+        const node = Array.isArray(data) ? data : (data.iconNode || data);
+        const svg = nodeToSvg(node, { size, strokeWidth, color });
+        ref.current.innerHTML = svg;
+      }, [name, size, strokeWidth, color]);
+      return <span ref={ref} style={{
+        display: 'inline-flex', width: size, height: size,
+        alignItems: 'center', justifyContent: 'center',
+        color: color || 'currentColor', ...style,
+      }} />;
+    }
+    function toPascal(n){ return n.split('-').map(s => s[0].toUpperCase()+s.slice(1)).join(''); }
+    function nodeToSvg(node, { size, strokeWidth, color }) {
+      // node may be [tag, attrs, children] OR [[tag, attrs], ...]
+      let children = '';
+      if (Array.isArray(node[0]) || typeof node[0] === 'object') {
+        children = node.map(c => oneTag(c)).join('');
+      } else if (typeof node[2] !== 'undefined' && Array.isArray(node[2])) {
+        children = node[2].map(c => oneTag(c)).join('');
+      } else {
+        // fallback unknown
+        children = '';
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color || 'currentColor'}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-linejoin="round">${children}</svg>`;
+    }
+    function oneTag(c) {
+      if (!Array.isArray(c)) return '';
+      const [tag, attrs] = c;
+      const a = Object.entries(attrs || {}).map(([k,v]) => `${k}="${v}"`).join(' ');
+      return `<${tag} ${a} />`;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Tweaks (super-light, in-page only)
+    // ─────────────────────────────────────────────────────────
+    function useTweaks(defaults) {
+      const [v, setV] = useState(defaults);
+      const set = (k, val) => setV(s => ({ ...s, [k]: val }));
+      return [v, set];
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Status bar (custom — full control)
+    // ─────────────────────────────────────────────────────────
+    function StatusBar({ dark, color }) {
+      const c = color || (dark ? '#fff' : '#000');
+      return (
+        <div className={`status-bar ${dark ? 'dark' : ''}`} style={{ color: c }}>
+          <span className="t" style={{ color: c }}>9:41</span>
+          <div className="icons">
+            <svg width="18" height="12" viewBox="0 0 18 12" fill={c}>
+              <rect x="0" y="7.5" width="3" height="4.5" rx="0.6"/>
+              <rect x="4.5" y="5" width="3" height="7" rx="0.6"/>
+              <rect x="9" y="2.5" width="3" height="9.5" rx="0.6"/>
+              <rect x="13.5" y="0" width="3" height="12" rx="0.6"/>
+            </svg>
+            <svg width="16" height="12" viewBox="0 0 17 12" fill={c}>
+              <path d="M8.5 3.2C10.8 3.2 12.9 4.1 14.4 5.6L15.5 4.5C13.7 2.7 11.2 1.5 8.5 1.5C5.8 1.5 3.3 2.7 1.5 4.5L2.6 5.6C4.1 4.1 6.2 3.2 8.5 3.2Z"/>
+              <path d="M8.5 6.8C9.9 6.8 11.1 7.3 12 8.2L13.1 7.1C11.8 5.9 10.2 5.1 8.5 5.1C6.8 5.1 5.2 5.9 3.9 7.1L5 8.2C5.9 7.3 7.1 6.8 8.5 6.8Z"/>
+              <circle cx="8.5" cy="10.5" r="1.5"/>
+            </svg>
+            <svg width="25" height="12" viewBox="0 0 27 13">
+              <rect x="0.5" y="0.5" width="23" height="12" rx="3.5" stroke={c} strokeOpacity="0.45" fill="none"/>
+              <rect x="2" y="2" width="20" height="9" rx="2" fill={c}/>
+              <path d="M25 4.5V8.5C25.8 8.2 26.5 7.2 26.5 6.5C26.5 5.8 25.8 4.8 25 4.5Z" fill={c} fillOpacity="0.5"/>
+            </svg>
+          </div>
+        </div>
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Shared atoms
+    // ─────────────────────────────────────────────────────────
+    const Pill = ({ children, bg, color, style }) => (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        padding: '4px 10px', borderRadius: 999,
+        fontSize: 10, fontWeight: 700, letterSpacing: 0.4,
+        background: bg, color: color, textTransform: 'uppercase',
+        fontFamily: "'Manrope', sans-serif",
+        ...style,
+      }}>{children}</span>
+    );
+
+    const PkgPlaceholder = ({ tone = 'a', size = 64, label }) => {
+      const palettes = {
+        a: ['#FFCE3B', '#1A1A1A'],
+        b: ['#FF7A45', '#1A1A1A'],
+        c: ['#3D6BFF', '#FFFFFF'],
+        d: ['#1A1A1A', '#FFFFFF'],
+      };
+      const [bg, fg] = palettes[tone];
+      return (
+        <div style={{
+          width: size, height: size, borderRadius: 10,
+          background: bg, color: fg,
+          position: 'relative', overflow: 'hidden',
+          boxShadow: '0 6px 14px rgba(0,0,0,0.16), inset 0 0 0 1px rgba(0,0,0,0.06)',
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+          padding: 7, boxSizing: 'border-box',
+          fontFamily: "'Manrope', sans-serif",
+          transform: 'rotate(-4deg)', flexShrink: 0,
+        }}>
+          <div style={{ fontSize: 8, opacity: 0.8, letterSpacing: 0.4 }}>FRAGILE</div>
+          <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1 }}>{label}</div>
+          <div style={{
+            position: 'absolute', bottom: 7, left: 7, right: 7,
+            height: 8, background: `repeating-linear-gradient(90deg, ${fg} 0 1.5px, transparent 1.5px 3px)`,
+            opacity: 0.7,
+          }} />
+        </div>
+      );
+    };
+
+    const iconBtn = (theme, accent) => ({
+      width: 38, height: 38, borderRadius: 12,
+      background: accent ? theme.ink : theme.surface,
+      border: accent ? 'none' : `1px solid ${theme.border}`,
+      color: accent ? theme.canvas : theme.ink,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer',
+      boxShadow: accent ? '0 6px 14px rgba(0,0,0,0.18)' : '0 1px 3px rgba(0,0,0,0.05)',
+    });
+
+    const SectionShell = ({ children, bg, label, theme, padded = true }) => (
+      <section
+        data-screen-label={label}
+        style={{
+          minHeight: '100%', height: '100%', width: '100%',
+          background: bg, color: theme.ink, position: 'relative',
+          display: 'flex', flexDirection: 'column',
+          paddingTop: padded ? 56 : 0,
+          paddingBottom: 30,
+          overflow: 'hidden',
+        }}
+      >{children}</section>
+    );
+
+    const SectionHeader = ({ kicker, title, sub, theme, right, dark }) => (
+      <div style={{
+        padding: '6px 20px 0',
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+        gap: 12,
+      }}>
+        <div>
+          <div style={{
+            fontSize: 10.5, fontFamily: "'Manrope', sans-serif",
+            letterSpacing: 1.4, color: dark ? 'rgba(255,255,255,0.5)' : theme.muted,
+            textTransform: 'uppercase',
+          }}>{kicker}</div>
+          <div style={{
+            fontSize: 28, fontWeight: 700, letterSpacing: -0.8,
+            lineHeight: 1.05, marginTop: 2,
+            color: dark ? theme.canvas : theme.ink,
+          }}>{title}</div>
+          {sub && <div style={{
+            fontSize: 12.5, color: dark ? 'rgba(255,255,255,0.7)' : theme.muted,
+            marginTop: 4, maxWidth: 280,
+          }}>{sub}</div>}
+        </div>
+        {right}
+      </div>
+    );
+
+    // ─────────────────────────────────────────────────────────
+    // Map SVG (generated, no copyrighted tiles)
+    // ─────────────────────────────────────────────────────────
+    const MapSVG = ({ accent, muted, bg }) => (
+      <svg viewBox="0 0 390 844" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" style={{ display: 'block' }}>
+        <defs>
+          <pattern id="grid" width="22" height="22" patternUnits="userSpaceOnUse">
+            <path d="M22 0H0V22" fill="none" stroke={muted} strokeWidth="0.5" opacity="0.4"/>
+          </pattern>
+        </defs>
+        <rect width="390" height="844" fill={bg}/>
+        <rect width="390" height="844" fill="url(#grid)"/>
+        <g stroke={muted} strokeWidth="14" fill="none" strokeLinecap="round" opacity="0.5">
+          <path d="M-20 220 Q150 200 230 280 T 440 320"/>
+          <path d="M 60 -20 Q 80 200 200 380 T 280 700"/>
+          <path d="M 0 600 Q 200 580 300 640 T 440 700"/>
+          <path d="M 320 0 L 240 220 L 380 460"/>
+        </g>
+        <g stroke={muted} strokeWidth="5" fill="none" strokeLinecap="round" opacity="0.55">
+          <path d="M-20 130 L 200 120 L 410 180"/>
+          <path d="M 100 280 L 180 460 L 100 620"/>
+          <path d="M 240 380 L 360 480"/>
+          <path d="M 60 760 L 380 820"/>
+        </g>
+        {/* Active route */}
+        <path d="M 90 780 Q 140 680 130 580 Q 120 460 200 380 Q 270 300 250 220 Q 230 140 130 110"
+              stroke={accent} strokeWidth="6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+        {/* Future segment dashed */}
+        <path d="M 130 110 Q 220 70 320 90"
+              stroke={accent} strokeWidth="6" fill="none" strokeLinecap="round" strokeDasharray="2 8" opacity="0.55"/>
+        {/* Pickup pin */}
+        <g transform="translate(130 110)">
+          <circle r="14" fill="#1a1a1a"/>
+          <circle r="6" fill={accent}/>
+        </g>
+        {/* Current vehicle */}
+        <g transform="translate(200 380)">
+          <circle r="20" fill="#fff" stroke="#1a1a1a" strokeWidth="2"/>
+          <path d="M-6 4 L0 -8 L6 4 L0 1 Z" fill="#1a1a1a"/>
+        </g>
+        {/* Destination pin */}
+        <g transform="translate(90 780)">
+          <circle r="11" fill={accent}/>
+          <circle r="4" fill="#1a1a1a"/>
+        </g>
+      </svg>
+    );
+
+    // ─────────────────────────────────────────────────────────
+    // SECTION 1 — Map
+    // ─────────────────────────────────────────────────────────
+    function MapSection({ theme }) {
+      const stops = [
+        { id: '1', s: 'done' }, { id: '2', s: 'done' },
+        { id: '3', s: 'current' }, { id: '4', s: 'next' }, { id: '5', s: 'next' },
+      ];
+      return (
+        <SectionShell bg={theme.canvas} label="01 Mapa" theme={theme}>
+          {/* Map area */}
+          <div style={{ position: 'absolute', inset: 0, background: theme.mapBg, zIndex: 0 }}>
+            <MapSVG accent={theme.accent} muted={theme.mapLine} bg={theme.mapBg} />
+          </div>
+
+          {/* Header overlay */}
+          <div style={{
+            position: 'absolute', top: 54, left: 0, right: 0, zIndex: 5,
+            padding: '10px 20px',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+          }}>
+            <div>
+              <div style={{
+                fontSize: 10.5, fontFamily: "'Manrope', sans-serif",
+                letterSpacing: 1.4, color: theme.muted, textTransform: 'uppercase',
+              }}>Mié · 20 Mayo</div>
+              <div style={{
+                fontSize: 26, fontWeight: 700, marginTop: 2, letterSpacing: -0.6,
+                color: theme.ink,
+              }}>Hola, Abigail</div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button style={iconBtn(theme)} aria-label="Buscar">
+                <Icon name="search" size={17}/>
+              </button>
+              <button style={iconBtn(theme)} aria-label="Notificaciones">
+                <Icon name="bell" size={17}/>
+                <span style={{
+                  position: 'absolute', top: 8, right: 8, width: 7, height: 7,
+                  borderRadius: 4, background: theme.accent, border: `2px solid ${theme.surface}`,
+                }}/>
+              </button>
+            </div>
+          </div>
+
+          {/* Left route timeline */}
+          <div style={{
+            position: 'absolute', left: 16, top: 130,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+            zIndex: 4,
+          }}>
+            {stops.map((s, i) => (
+              <React.Fragment key={s.id}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: 13,
+                  background: s.s === 'done' ? theme.ink
+                    : s.s === 'current' ? theme.accent
+                    : theme.surface,
+                  border: s.s === 'next' ? `1.5px solid ${theme.ink}` : 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: s.s === 'done' ? theme.canvas : theme.ink,
+                  fontSize: 11, fontWeight: 700,
+                  fontFamily: "'Manrope', sans-serif",
+                  boxShadow: s.s === 'current' ? `0 0 0 5px ${theme.accent}55` : '0 2px 6px rgba(0,0,0,0.10)',
+                }}>
+                  {s.s === 'done' ? <Icon name="check" size={13} strokeWidth={3}/> : i + 1}
+                </div>
+                {i < stops.length - 1 && (
+                  <div style={{
+                    width: 2, height: 18,
+                    background: s.s === 'done'
+                      ? theme.ink
+                      : `repeating-linear-gradient(180deg, ${theme.ink} 0 3px, transparent 3px 6px)`,
+                    opacity: s.s === 'done' ? 1 : 0.45,
+                  }}/>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Right floating controls */}
+          <div style={{
+            position: 'absolute', right: 16, top: 130,
+            display: 'flex', flexDirection: 'column', gap: 8, zIndex: 4,
+          }}>
+            <button style={iconBtn(theme)}><Icon name="plus" size={16}/></button>
+            <button style={iconBtn(theme)}><Icon name="minus" size={16}/></button>
+            <div style={{ height: 6 }}/>
+            <button style={iconBtn(theme, true)}><Icon name="locate-fixed" size={16}/></button>
+            <button style={iconBtn(theme)}><Icon name="layers" size={16}/></button>
+          </div>
+
+          {/* Bottom card */}
+          <div style={{
+            position: 'absolute', left: 16, right: 16, bottom: 50, zIndex: 5,
+          }}>
+            {/* Progress */}
+            <div style={{
+              background: theme.surface, borderRadius: 16,
+              padding: '12px 14px', marginBottom: 10,
+              boxShadow: '0 8px 22px rgba(0,0,0,0.10)',
+              border: `1px solid ${theme.border}`,
+            }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                marginBottom: 8,
+              }}>
+                <span style={{
+                  fontSize: 10.5, fontFamily: "'Manrope', sans-serif",
+                  letterSpacing: 1.2, color: theme.muted, textTransform: 'uppercase',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}>
+                  <Icon name="route" size={12}/>
+                  Ruta · 2 de 5 completas
+                </span>
+                <span style={{
+                  fontSize: 11, fontFamily: "'Manrope', sans-serif",
+                  color: theme.ink, fontWeight: 700,
+                }}>40%</span>
+              </div>
+              <div style={{
+                height: 6, background: theme.border, borderRadius: 3, overflow: 'hidden',
+              }}>
+                <div style={{ width: '40%', height: '100%', background: theme.accent, borderRadius: 3 }}/>
+              </div>
+            </div>
+
+            {/* Next stop dark card */}
+            <div style={{
+              background: theme.ink, color: theme.canvas, borderRadius: 22,
+              padding: 18, position: 'relative', overflow: 'hidden',
+              boxShadow: '0 18px 40px rgba(0,0,0,0.22)',
+            }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                marginBottom: 12,
+              }}>
+                <Pill bg={theme.accent} color={theme.ink}>
+                  <Icon name="map-pin" size={11}/>
+                  Próxima parada
+                </Pill>
+                <div style={{
+                  fontSize: 11, fontFamily: "'Manrope', sans-serif",
+                  opacity: 0.55, letterSpacing: 1,
+                }}>#A-4821</div>
+              </div>
+              <div style={{
+                fontSize: 22, fontWeight: 700, letterSpacing: -0.4, lineHeight: 1.15,
+              }}>10 Calle Morelos</div>
+              <div style={{ fontSize: 12.5, opacity: 0.6, marginTop: 2 }}>
+                Col. Centro · Mariana López · 1.2 kg
+              </div>
+
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12, marginTop: 14,
+                paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.1)',
+              }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9.5, opacity: 0.5, letterSpacing: 1, textTransform: 'uppercase', fontFamily: "'Manrope', sans-serif" }}>ETA</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, fontFamily: "'Manrope', sans-serif", marginTop: 1 }}>4 min</div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 9.5, opacity: 0.5, letterSpacing: 1, textTransform: 'uppercase', fontFamily: "'Manrope', sans-serif" }}>Distancia</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, fontFamily: "'Manrope', sans-serif", marginTop: 1 }}>1.8 km</div>
+                </div>
+                <button style={{
+                  background: theme.accent, color: theme.ink, border: 'none',
+                  padding: '10px 14px', borderRadius: 14,
+                  fontSize: 13, fontWeight: 700, letterSpacing: -0.2,
+                  display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                }}>
+                  Navegar
+                  <Icon name="navigation" size={13} strokeWidth={2.4}/>
+                </button>
+              </div>
+            </div>
+          </div>
+        </SectionShell>
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // SECTION 2 — Pedidos del día
+    // ─────────────────────────────────────────────────────────
+    function OrdersSection({ theme }) {
+      const orders = [
+        { id: 'C-9901', addr: '21 Ruiz Cortines', col: 'Roma Norte', name: 'Diego Hernández',
+          status: 'delivered', time: '08:42', weight: '1.2 kg', tone: 'c' },
+        { id: 'B-7712', addr: '14 Av. Reforma', col: 'Juárez', name: 'Ivan Petrov',
+          status: 'delivered', time: '09:18', weight: '3.4 kg', tone: 'a' },
+        { id: 'A-4821', addr: '10 Calle Morelos', col: 'Centro', name: 'Mariana López',
+          status: 'enRoute', time: 'ETA 4 min', weight: '0.8 kg', tone: 'b' },
+        { id: 'D-1102', addr: '7 Insurgentes Sur', col: 'Del Valle', name: 'Sofía Ramírez',
+          status: 'pending', time: '11:00', weight: '2.1 kg', tone: 'd' },
+        { id: 'E-5530', addr: '32 Av. Universidad', col: 'Coyoacán', name: 'Luis Martín',
+          status: 'pending', time: '12:30', weight: '5.6 kg', tone: 'a' },
+      ];
+
+      const statusMap = {
+        delivered: { label: 'Entregado', bg: theme.successBg, fg: theme.successFg, icon: 'check-check' },
+        enRoute:   { label: 'En ruta',   bg: theme.accent,    fg: theme.ink,         icon: 'navigation' },
+        pending:   { label: 'Pendiente', bg: theme.canvas,    fg: theme.muted,       icon: 'clock' },
+      };
+      const counts = {
+        todos: orders.length,
+        entregados: orders.filter(o => o.status === 'delivered').length,
+        ruta: orders.filter(o => o.status === 'enRoute').length,
+        pendientes: orders.filter(o => o.status === 'pending').length,
+      };
+      const [filter, setFilter] = useState('todos');
+      const filtered = useMemo(() => {
+        if (filter === 'todos') return orders;
+        const map = { entregados: 'delivered', ruta: 'enRoute', pendientes: 'pending' };
+        return orders.filter(o => o.status === map[filter]);
+      }, [filter]);
+
+      return (
+        <SectionShell bg={theme.canvas} label="02 Pedidos" theme={theme}>
+          <SectionHeader
+            theme={theme}
+            kicker="02 — Hoy, 5 paquetes"
+            title={<>Pedidos<br/>del día</>}
+            right={<div style={{ textAlign: 'right' }}>
+              <div style={{
+                fontSize: 10.5, fontFamily: "'Manrope', sans-serif",
+                letterSpacing: 1.4, color: theme.muted, textTransform: 'uppercase',
+              }}>Carrito</div>
+              <div style={{
+                fontSize: 32, fontWeight: 700,
+                fontFamily: "'Manrope', sans-serif", lineHeight: 1,
+                color: theme.ink,
+              }}>05</div>
+            </div>}
+          />
+
+          {/* Stat strip */}
+          <div style={{
+            margin: '16px 20px 12px', display: 'grid',
+            gridTemplateColumns: 'repeat(4,1fr)',
+            background: theme.surface, borderRadius: 16,
+            border: `1px solid ${theme.border}`, overflow: 'hidden',
+          }}>
+            {[
+              { k: 'Total',      v: counts.todos,      c: theme.ink, icon: 'package' },
+              { k: 'Entregados', v: counts.entregados, c: theme.successFg, icon: 'check-circle-2' },
+              { k: 'En ruta',    v: counts.ruta,       c: theme.accentInk, icon: 'truck' },
+              { k: 'Pendientes', v: counts.pendientes, c: theme.muted, icon: 'clock' },
+            ].map((s, i) => (
+              <div key={s.k} style={{
+                padding: '12px 6px', textAlign: 'center',
+                borderLeft: i ? `1px solid ${theme.border}` : 'none',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4, color: s.c }}>
+                  <Icon name={s.icon} size={13} strokeWidth={2}/>
+                </div>
+                <div style={{
+                  fontSize: 22, fontWeight: 700, color: s.c, lineHeight: 1,
+                  fontFamily: "'Manrope', sans-serif",
+                }}>{String(s.v).padStart(2,'0')}</div>
+                <div style={{
+                  fontSize: 9, marginTop: 4, letterSpacing: 0.8,
+                  color: theme.muted, textTransform: 'uppercase',
+                  fontFamily: "'Manrope', sans-serif",
+                }}>{s.k}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filter chips */}
+          <div className="chips" style={{
+            display: 'flex', gap: 6, padding: '0 20px 12px', overflowX: 'auto',
+          }}>
+            {[
+              ['todos','Todos', counts.todos],
+              ['ruta','En ruta', counts.ruta],
+              ['pendientes','Pendientes', counts.pendientes],
+              ['entregados','Entregados', counts.entregados],
+            ].map(([k,label,n]) => (
+              <button key={k} onClick={() => setFilter(k)} style={{
+                cursor: 'pointer', padding: '7px 12px', borderRadius: 999,
+                background: filter === k ? theme.ink : theme.surface,
+                color: filter === k ? theme.canvas : theme.ink,
+                fontSize: 12, fontWeight: 600, letterSpacing: -0.1,
+                display: 'inline-flex', gap: 6, alignItems: 'center',
+                whiteSpace: 'nowrap',
+                border: filter === k ? `1px solid ${theme.ink}` : `1px solid ${theme.border}`,
+                fontFamily: "'Montserrat', sans-serif",
+              }}>
+                {label}
+                <span style={{
+                  fontSize: 10, fontFamily: "'Manrope', sans-serif", opacity: 0.75,
+                }}>{String(n).padStart(2,'0')}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Orders list */}
+          <div style={{
+            flex: 1, overflowY: 'auto', padding: '0 20px 30px',
+            display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            {filtered.map((o) => {
+              const st = statusMap[o.status];
+              const isActive = o.status === 'enRoute';
+              return (
+                <div key={o.id} style={{
+                  background: isActive ? theme.ink : theme.surface,
+                  color: isActive ? theme.canvas : theme.ink,
+                  borderRadius: 18, padding: 14,
+                  border: isActive ? 'none' : `1px solid ${theme.border}`,
+                  boxShadow: isActive ? '0 12px 26px rgba(0,0,0,0.20)' : '0 1px 0 rgba(0,0,0,0.02)',
+                  display: 'flex', gap: 14, alignItems: 'center',
+                  position: 'relative',
+                }}>
+                  <PkgPlaceholder tone={o.tone} size={62} label={`#${o.id.split('-')[0]}`} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 3, flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: 10, fontFamily: "'Manrope', sans-serif",
+                        color: isActive ? 'rgba(255,255,255,0.55)' : theme.muted,
+                        letterSpacing: 1,
+                      }}>#{o.id}</span>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '2px 7px', borderRadius: 999,
+                        background: st.bg, color: st.fg,
+                        fontSize: 9, fontWeight: 700, letterSpacing: 0.4,
+                        fontFamily: "'Manrope', sans-serif",
+                        textTransform: 'uppercase',
+                      }}>
+                        <Icon name={st.icon} size={9} strokeWidth={2.4}/>
+                        {st.label}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: -0.3, lineHeight: 1.2 }}>
+                      {o.addr}
+                    </div>
+                    <div style={{
+                      fontSize: 12, color: isActive ? 'rgba(255,255,255,0.65)' : theme.muted,
+                      marginTop: 2,
+                    }}>{o.col} · {o.name}</div>
+                    <div style={{
+                      display: 'flex', gap: 12, marginTop: 8,
+                      fontSize: 11, fontFamily: "'Manrope', sans-serif",
+                      color: isActive ? 'rgba(255,255,255,0.75)' : theme.muted,
+                    }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Icon name="clock" size={11}/> {o.time}
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Icon name="package" size={11}/> {o.weight}
+                      </span>
+                    </div>
+                  </div>
+                  <button style={{
+                    width: 34, height: 34, borderRadius: 12,
+                    background: isActive ? theme.accent : theme.canvas,
+                    color: theme.ink,
+                    border: isActive ? 'none' : `1px solid ${theme.border}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', flexShrink: 0,
+                  }}>
+                    <Icon name="chevron-right" size={14} strokeWidth={2.4}/>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </SectionShell>
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // SECTION 3 — Estadísticas
+    // ─────────────────────────────────────────────────────────
+    function StatsSection({ theme }) {
+      const bars = [3,5,4,7,6,9,18];
+      const maxB = Math.max(...bars);
+      const days = ['L','M','M','J','V','S','D'];
+
+      return (
+        <SectionShell bg={theme.accent} label="03 Estadísticas" theme={theme}>
+          <div style={{ padding: '6px 20px 0' }}>
+            <div style={{
+              fontSize: 10.5, fontFamily: "'Manrope', sans-serif",
+              letterSpacing: 1.4, color: theme.ink, opacity: 0.55, textTransform: 'uppercase',
+            }}>03 — Tu desempeño</div>
+            <div style={{
+              fontSize: 28, fontWeight: 700, letterSpacing: -0.8, lineHeight: 1.05,
+              marginTop: 2, color: theme.ink,
+            }}>Esta semana</div>
+          </div>
+
+          <div style={{ padding: '14px 20px 0' }}>
+            <div style={{
+              background: theme.ink, color: theme.canvas, borderRadius: 22,
+              padding: 18, position: 'relative', overflow: 'hidden',
+            }}>
+              <div style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                marginBottom: 8,
+              }}>
+                <div style={{
+                  fontSize: 10, fontFamily: "'Manrope', sans-serif",
+                  letterSpacing: 1.4, opacity: 0.6, textTransform: 'uppercase',
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                }}>
+                  <Icon name="package-check" size={11}/> Entregas hoy
+                </div>
+                <Pill bg={theme.accent} color={theme.ink}>
+                  <Icon name="trending-up" size={10} strokeWidth={2.4}/>
+                  +12%
+                </Pill>
+              </div>
+              <div style={{
+                fontSize: 92, fontWeight: 700, letterSpacing: -4, lineHeight: 0.85,
+                fontFamily: "'Montserrat', sans-serif", marginTop: 4,
+              }}>18</div>
+              <div style={{ fontSize: 12, opacity: 0.6, marginTop: 6 }}>
+                de 22 asignadas · 4 pendientes
+              </div>
+
+              {/* Bar chart */}
+              <div style={{ marginTop: 16, position: 'relative' }}>
+                <div style={{
+                  display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6,
+                  alignItems: 'flex-end', height: 64,
+                }}>
+                  {bars.map((b, i) => (
+                    <div key={i} style={{
+                      height: `${(b / maxB) * 100}%`,
+                      background: i === bars.length - 1 ? theme.accent : 'rgba(255,255,255,0.22)',
+                      borderRadius: 4, position: 'relative',
+                    }}>
+                      {i === bars.length - 1 && (
+                        <div style={{
+                          position: 'absolute', top: -16, left: '50%', transform: 'translateX(-50%)',
+                          fontSize: 10, fontFamily: "'Manrope', sans-serif",
+                          color: theme.accent, fontWeight: 700,
+                        }}>18</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div style={{
+                  display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6, marginTop: 6,
+                }}>
+                  {days.map((d, i) => (
+                    <div key={i} style={{
+                      fontSize: 9.5, fontFamily: "'Manrope', sans-serif",
+                      color: 'rgba(255,255,255,0.45)', textAlign: 'center',
+                      fontWeight: i === bars.length - 1 ? 700 : 400,
+                    }}>{d}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2x2 stat grid */}
+          <div style={{
+            padding: '10px 20px 0', display: 'grid',
+            gridTemplateColumns: '1fr 1fr', gap: 10,
+          }}>
+            {[
+              { k: 'Distancia',    v: '124',  u: 'km',  sub: '6 hr 40 min en ruta',     icon: 'map'      },
+              { k: 'Calificación', v: '4.9',  u: '/5',  sub: '37 reseñas esta semana',  icon: 'star'     },
+              { k: 'Eficiencia',   v: '94',   u: '%',   sub: 'Optimización de ruta',    icon: 'zap'      },
+              { k: 'Ingreso',      v: '2,840',u: 'MXN', sub: 'Acumulado de la semana',  icon: 'banknote' },
+            ].map((s) => (
+              <div key={s.k} style={{
+                background: theme.canvas, color: theme.ink, borderRadius: 16,
+                padding: 12, position: 'relative',
+              }}>
+                <div style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                }}>
+                  <div style={{
+                    fontSize: 10, fontFamily: "'Manrope', sans-serif",
+                    letterSpacing: 1.2, color: theme.muted, textTransform: 'uppercase',
+                  }}>{s.k}</div>
+                  <Icon name={s.icon} size={13} color={theme.muted}/>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, marginTop: 6 }}>
+                  <span style={{
+                    fontSize: 28, fontWeight: 700, letterSpacing: -1, lineHeight: 1,
+                    fontFamily: "'Manrope', sans-serif",
+                  }}>{s.v}</span>
+                  <span style={{
+                    fontSize: 12, color: theme.muted, fontWeight: 600,
+                    fontFamily: "'Manrope', sans-serif",
+                  }}>{s.u}</span>
+                </div>
+                <div style={{ fontSize: 10.5, color: theme.muted, marginTop: 4 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Achievement strip */}
+          <div style={{
+            margin: '10px 20px 0', padding: '12px 14px',
+            background: 'rgba(0,0,0,0.06)', borderRadius: 14,
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: theme.ink, color: theme.accent,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Icon name="award" size={18}/>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: theme.ink, letterSpacing: -0.2 }}>
+                Racha de 5 días sin incidencias
+              </div>
+              <div style={{ fontSize: 11, color: theme.ink, opacity: 0.6 }}>
+                Sigue así para bono mensual
+              </div>
+            </div>
+            <Icon name="chevron-right" size={16} color={theme.ink}/>
+          </div>
+        </SectionShell>
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // CHAT — list + open conversation
+    // ─────────────────────────────────────────────────────────
+    const CONVERSATIONS = [
+      { id: 'tony',  name: 'Tony Prado',    role: 'Administrador', last: 'Recuerda mandar reporte al llegar.',
+        time: '4:57 p.m.', online: true,  tag: 'TP', color: '#FF7849' },
+      { id: 'ops',   name: 'Centro de Ops', role: 'Soporte 24/7',  last: 'Nuevo paquete asignado: #E-5530',
+        time: '3:21 p.m.', online: true,  tag: 'CO', color: '#3D6BFF' },
+      { id: 'karla', name: 'Karla Méndez',  role: 'Supervisor',    last: 'Excelente trabajo hoy.',
+        time: 'Ayer',     online: false, tag: 'KM', color: '#7C5CFF' },
+    ];
+
+    const MESSAGES = {
+      tony: [
+        { kind: 'system',       text: 'Chat iniciado',  time: '3:23 p.m.' },
+        { kind: 'them',         text: 'Hola, ¿cómo vas con la ruta?', time: '3:25 p.m.' },
+        { kind: 'announcement', text: 'Necesito reporte de avance en carretera cada 2 horas.', time: '4:57 p.m.' },
+        { kind: 'me',           text: 'Voy bien, 2 entregas hechas, sigo en Reforma.', time: '4:58 p.m.', read: true },
+        { kind: 'them',         text: '¿ETA al siguiente punto?', time: '4:59 p.m.' },
+        { kind: 'me',           text: 'Llego en 4 minutos.', time: '4:59 p.m.', read: true },
+        { kind: 'them',         text: 'Perfecto, recuerda mandar reporte al llegar.', time: 'ahora' },
+      ],
+      ops: [
+        { kind: 'system',       text: 'Chat iniciado',  time: '2:10 p.m.' },
+        { kind: 'them',         text: 'Nuevo paquete asignado: #E-5530', time: '3:21 p.m.' },
+        { kind: 'them',         text: 'Recolección en bodega Coyoacán.', time: '3:21 p.m.' },
+      ],
+      karla: [
+        { kind: 'system',       text: 'Chat iniciado', time: '08:00 a.m.' },
+        { kind: 'them',         text: 'Excelente trabajo hoy.', time: 'Ayer 18:42' },
+      ],
+    };
+
+    function ChatSection({ theme, onClose, openConvId, onOpenConv, onBackToList, reveal, unreadByConv = {} }) {
+      const openConv = CONVERSATIONS.find(c => c.id === openConvId);
+
+      return (
+        <SectionShell bg={theme.canvas} label="Chat" theme={theme}>
+          {openConv ? (
+            <ConversationView theme={theme} conv={openConv} onBack={onBackToList} onClose={onClose}/>
+          ) : (
+            <ConversationList theme={theme} onClose={onClose} onOpenConv={onOpenConv} unreadByConv={unreadByConv}/>
+          )}
+
+          {/* Circle reveal overlay */}
+          {reveal && (
+            <div
+              key={reveal.ts}
+              className="reveal-circle"
+              style={{
+                ['--rx']: `${reveal.x}px`,
+                ['--ry']: `${reveal.y}px`,
+                background: reveal.color,
+              }}
+            />
+          )}
+        </SectionShell>
+      );
+    }
+
+    function ConversationList({ theme, onClose, onOpenConv, unreadByConv }) {
+      return (
+        <>
+          <div style={{
+            padding: '6px 16px 0',
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            {onClose && (
+              <button onClick={onClose} aria-label="Cerrar chat"
+                      style={drawerIconBtn(theme)}>
+                <Icon name="chevron-right" size={18} strokeWidth={2.2}/>
+              </button>
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: 10.5, fontFamily: "'Manrope', sans-serif",
+                letterSpacing: 1.4, color: theme.muted, textTransform: 'uppercase',
+              }}>Comunicación</div>
+              <div style={{
+                fontSize: 24, fontWeight: 700, letterSpacing: -0.6,
+                lineHeight: 1.1, marginTop: 2, color: theme.ink,
+              }}>Chat operativo</div>
+            </div>
+            <button aria-label="Buscar" style={drawerIconBtn(theme)}>
+              <Icon name="search" size={17}/>
+            </button>
+          </div>
+
+          {/* Announcement */}
+          <div style={{
+            margin: '14px 20px 0', padding: 12,
+            background: theme.warnBg, color: theme.ink,
+            borderRadius: 16, border: `1px solid ${theme.warnBorder}`,
+            display: 'flex', gap: 10, alignItems: 'flex-start',
+          }}>
+            <div style={{
+              width: 30, height: 30, borderRadius: 10,
+              background: theme.ink, color: theme.warnBg,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <Icon name="megaphone" size={14}/>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: 10, fontFamily: "'Manrope', sans-serif",
+                letterSpacing: 1, textTransform: 'uppercase', opacity: 0.65,
+              }}>Anuncio · 12 min</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, marginTop: 2, lineHeight: 1.35 }}>
+                Reporte de avance cada 2 horas mientras estés en carretera.
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            padding: '14px 20px 6px',
+            fontSize: 10.5, fontFamily: "'Manrope', sans-serif",
+            letterSpacing: 1.4, color: theme.muted, textTransform: 'uppercase',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span>Conversaciones</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: 3, background: theme.successFg,
+                boxShadow: `0 0 0 3px ${theme.successFg}33`,
+              }}/>
+              <span style={{ color: theme.successFg }}>2 en línea</span>
+            </span>
+          </div>
+
+          <div style={{
+            flex: 1, overflowY: 'auto', padding: '0 20px 0',
+            display: 'flex', flexDirection: 'column', gap: 8,
+          }}>
+            {CONVERSATIONS.map((c, i) => {
+              const unread = unreadByConv[c.id] || 0;
+              const featured = i === 0; // Tony — highlighted
+              return (
+                <div
+                  key={c.id}
+                  onClick={(e) => onOpenConv(c, e)}
+                  style={{
+                    background: featured ? theme.ink : theme.surface,
+                    color: featured ? theme.canvas : theme.ink,
+                    borderRadius: 18, padding: 12,
+                    border: featured ? 'none' : `1px solid ${theme.border}`,
+                    display: 'flex', gap: 12, alignItems: 'center',
+                    boxShadow: featured ? '0 12px 26px rgba(0,0,0,0.18)' : 'none',
+                    cursor: 'pointer',
+                    transition: 'transform 0.12s',
+                  }}
+                  onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
+                  onMouseUp={(e) => e.currentTarget.style.transform = ''}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = ''}
+                >
+                  <div style={{ position: 'relative', flexShrink: 0 }}>
+                    <div style={{
+                      width: 46, height: 46, borderRadius: 23,
+                      background: c.color, color: '#0F0F0F',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 14, fontWeight: 700, letterSpacing: -0.3,
+                      fontFamily: "'Manrope', sans-serif",
+                    }}>{c.tag}</div>
+                    {c.online && (
+                      <div style={{
+                        position: 'absolute', bottom: -2, right: -2,
+                        width: 13, height: 13, borderRadius: 7,
+                        background: theme.successFg,
+                        border: `2.5px solid ${featured ? theme.ink : theme.surface}`,
+                      }}/>
+                    )}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: -0.2 }}>
+                        {c.name}
+                      </div>
+                      <div style={{
+                        fontSize: 10, fontFamily: "'Manrope', sans-serif",
+                        opacity: featured ? 0.6 : 0.5,
+                      }}>{c.time}</div>
+                    </div>
+                    <div style={{
+                      fontSize: 10, fontFamily: "'Manrope', sans-serif",
+                      letterSpacing: 0.6, textTransform: 'uppercase',
+                      opacity: 0.55, marginTop: 1,
+                    }}>{c.role}</div>
+                    <div style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      marginTop: 5, gap: 8,
+                    }}>
+                      <div style={{
+                        fontSize: 12, opacity: featured ? 0.8 : 0.65,
+                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                        flex: 1,
+                      }}>{c.last}</div>
+                      {unread > 0 && (
+                        <div style={{
+                          minWidth: 20, height: 20, borderRadius: 10, padding: '0 6px',
+                          background: theme.accent, color: '#0F0F0F',
+                          fontSize: 10.5, fontWeight: 700,
+                          fontFamily: "'Manrope', sans-serif",
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0,
+                        }}>{unread}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{
+            margin: '10px 20px 0', padding: '4px 4px 4px 14px',
+            background: theme.surface, borderRadius: 26,
+            border: `1px solid ${theme.border}`,
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <Icon name="paperclip" size={16} color={theme.muted}/>
+            <div style={{ flex: 1, fontSize: 13, color: theme.muted, padding: '12px 0' }}>
+              Mensaje rápido…
+            </div>
+            <button style={{
+              width: 38, height: 38, borderRadius: 19,
+              background: theme.accent, color: '#0F0F0F', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer',
+            }}>
+              <Icon name="send" size={15} strokeWidth={2.4}/>
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    function ConversationView({ theme, conv, onBack, onClose }) {
+      const messages = MESSAGES[conv.id] || [];
+      const [draft, setDraft] = useState('');
+      const [localMessages, setLocalMessages] = useState(messages);
+      const listRef = useRef(null);
+
+      useEffect(() => {
+        // scroll to bottom when entering conversation
+        const el = listRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      }, [conv.id, localMessages.length]);
+
+      // typing indicator simulation
+      const [typing, setTyping] = useState(false);
+      useEffect(() => {
+        const t = setTimeout(() => setTyping(true), 2000);
+        const t2 = setTimeout(() => setTyping(false), 5000);
+        return () => { clearTimeout(t); clearTimeout(t2); };
+      }, [conv.id]);
+
+      const send = () => {
+        const v = draft.trim();
+        if (!v) return;
+        setLocalMessages(m => [...m, { kind: 'me', text: v, time: 'ahora', read: false }]);
+        setDraft('');
+      };
+
+      return (
+        <>
+          {/* Header */}
+          <div style={{
+            padding: '6px 14px 12px', display: 'flex', alignItems: 'center', gap: 10,
+            borderBottom: `1px solid ${theme.border}`, background: theme.canvas,
+          }}>
+            <button onClick={onBack} aria-label="Volver a lista"
+                    style={drawerIconBtn(theme)}>
+              <Icon name="arrow-left" size={18} strokeWidth={2.2}/>
+            </button>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div style={{
+                width: 42, height: 42, borderRadius: 21,
+                background: conv.color, color: '#0F0F0F',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 700, letterSpacing: -0.3,
+                fontFamily: "'Manrope', sans-serif",
+              }}>{conv.tag}</div>
+              {conv.online && (
+                <div style={{
+                  position: 'absolute', bottom: -2, right: -2,
+                  width: 13, height: 13, borderRadius: 7,
+                  background: theme.successFg,
+                  border: `2.5px solid ${theme.canvas}`,
+                }}/>
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: -0.2, color: theme.ink }}>
+                {conv.name}
+              </div>
+              <div style={{
+                fontSize: 10.5, fontFamily: "'Manrope', sans-serif",
+                letterSpacing: 0.6, textTransform: 'uppercase', color: theme.muted,
+                marginTop: 1, display: 'inline-flex', alignItems: 'center', gap: 5,
+              }}>
+                {conv.online ? (
+                  <>
+                    <span style={{ width: 5, height: 5, borderRadius: 3, background: theme.successFg }}/>
+                    En línea · {conv.role}
+                  </>
+                ) : (
+                  <>Visto hace 2 hr · {conv.role}</>
+                )}
+              </div>
+            </div>
+            <button aria-label="Llamar" style={drawerIconBtn(theme)}>
+              <Icon name="phone" size={16}/>
+            </button>
+            <button aria-label="Más" style={drawerIconBtn(theme)}>
+              <Icon name="more-vertical" size={17}/>
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div ref={listRef} style={{
+            flex: 1, overflowY: 'auto',
+            padding: '14px 16px 14px',
+            display: 'flex', flexDirection: 'column', gap: 8,
+            background: theme.canvas,
+          }}>
+            <div style={{
+              alignSelf: 'center', fontSize: 10.5, color: theme.muted,
+              letterSpacing: 1.2, textTransform: 'uppercase',
+              fontFamily: "'Manrope', sans-serif",
+              padding: '4px 10px', borderRadius: 999,
+              background: theme.surface, border: `1px solid ${theme.border}`,
+              marginBottom: 4,
+            }}>Hoy</div>
+            {localMessages.map((m, i) => (
+              <MessageBubble key={i} m={m} theme={theme} conv={conv}/>
+            ))}
+            {typing && (
+              <div style={{ alignSelf: 'flex-start', display: 'flex', gap: 6, padding: '8px 14px',
+                            background: theme.surface, borderRadius: 16, border: `1px solid ${theme.border}` }}>
+                {[0,1,2].map(i => (
+                  <span key={i} style={{
+                    width: 6, height: 6, borderRadius: 3, background: theme.muted,
+                    animation: `typing 1.2s ${i*0.2}s ease-in-out infinite`,
+                  }}/>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Input bar */}
+          <div style={{
+            padding: '8px 14px 4px',
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: theme.canvas, borderTop: `1px solid ${theme.border}`,
+          }}>
+            <button aria-label="Adjuntar" style={drawerIconBtn(theme)}>
+              <Icon name="paperclip" size={16}/>
+            </button>
+            <div style={{
+              flex: 1, background: theme.surface, borderRadius: 22,
+              border: `1px solid ${theme.border}`,
+              display: 'flex', alignItems: 'center', padding: '6px 12px', gap: 6,
+            }}>
+              <input
+                type="text"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
+                placeholder="Escribe un mensaje…"
+                style={{
+                  flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                  fontFamily: "'Manrope', sans-serif", fontSize: 13.5, color: theme.ink,
+                  padding: '8px 0',
+                }}
+              />
+              <button aria-label="Emoji" style={{
+                background: 'transparent', border: 'none', padding: 0, cursor: 'pointer',
+                color: theme.muted, display: 'flex',
+              }}>
+                <Icon name="smile" size={17}/>
+              </button>
+            </div>
+            <button onClick={send} aria-label="Enviar" style={{
+              width: 42, height: 42, borderRadius: 21,
+              background: theme.accent, color: '#0F0F0F', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', flexShrink: 0,
+              boxShadow: '0 6px 14px rgba(0,0,0,0.12)',
+            }}>
+              <Icon name="send" size={16} strokeWidth={2.4}/>
+            </button>
+          </div>
+        </>
+      );
+    }
+
+    function MessageBubble({ m, theme, conv }) {
+      if (m.kind === 'system') {
+        return (
+          <div style={{ alignSelf: 'center', fontSize: 11, color: theme.muted,
+                        padding: '4px 12px', borderRadius: 999,
+                        background: theme.surface, border: `1px dashed ${theme.border}` }}>
+            {m.text} · {m.time}
+          </div>
+        );
+      }
+      if (m.kind === 'announcement') {
+        return (
+          <div style={{
+            alignSelf: 'stretch', padding: 12,
+            background: theme.warnBg, color: theme.ink,
+            border: `1px solid ${theme.warnBorder}`, borderRadius: 16,
+            display: 'flex', gap: 10, alignItems: 'flex-start',
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 9,
+              background: theme.ink, color: theme.warnBg,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <Icon name="megaphone" size={13}/>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: 9.5, fontFamily: "'Manrope', sans-serif",
+                letterSpacing: 1, textTransform: 'uppercase', opacity: 0.65,
+              }}>Anuncio · {conv.name} · {m.time}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginTop: 2, lineHeight: 1.35 }}>
+                {m.text}
+              </div>
+            </div>
+          </div>
+        );
+      }
+      const me = m.kind === 'me';
+      return (
+        <div style={{
+          alignSelf: me ? 'flex-end' : 'flex-start',
+          maxWidth: '78%',
+          background: me ? theme.ink : theme.surface,
+          color: me ? theme.canvas : theme.ink,
+          padding: '10px 12px',
+          borderRadius: 18,
+          borderBottomRightRadius: me ? 6 : 18,
+          borderBottomLeftRadius: me ? 18 : 6,
+          border: me ? 'none' : `1px solid ${theme.border}`,
+          boxShadow: me ? '0 6px 14px rgba(0,0,0,0.10)' : 'none',
+          position: 'relative',
+        }}>
+          <div style={{ fontSize: 13.5, lineHeight: 1.35, letterSpacing: -0.1 }}>{m.text}</div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            justifyContent: me ? 'flex-end' : 'flex-start',
+            fontSize: 10, fontFamily: "'Manrope', sans-serif",
+            opacity: 0.55, marginTop: 4,
+          }}>
+            <span>{m.time}</span>
+            {me && (
+              <Icon name={m.read ? 'check-check' : 'check'} size={11} strokeWidth={2.4}/>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const drawerIconBtn = (theme) => ({
+      width: 38, height: 38, borderRadius: 12,
+      background: theme.surface, border: `1px solid ${theme.border}`,
+      color: theme.ink, display: 'flex', alignItems: 'center', justifyContent: 'center',
+      cursor: 'pointer', flexShrink: 0,
+    });
+
+    // ─────────────────────────────────────────────────────────
+    // PALETTES
+    // ─────────────────────────────────────────────────────────
+    const PALETTES = {
+      lime: {
+        canvas: '#F4F4EF', surface: '#FFFFFF', border: 'rgba(0,0,0,0.07)',
+        ink: '#0F0F0F', muted: '#6E6E6E',
+        accent: '#B8FF3C', accentInk: '#0F0F0F',
+        mapBg: '#EFEFEA', mapLine: '#C9C9C2',
+        successFg: '#0B7E3E', successBg: '#D6F4DD',
+        warnBg: '#FFE9A8', warnBorder: '#F0CB55',
+      },
+      coral: {
+        canvas: '#F8F4F0', surface: '#FFFFFF', border: 'rgba(0,0,0,0.07)',
+        ink: '#1A1110', muted: '#6E5E5C',
+        accent: '#FF7849', accentInk: '#1A1110',
+        mapBg: '#F0EBE6', mapLine: '#D2CBC3',
+        successFg: '#0B7E3E', successBg: '#DFF1E2',
+        warnBg: '#FFE3B8', warnBorder: '#F0BE5C',
+      },
+      violet: {
+        canvas: '#F5F3FA', surface: '#FFFFFF', border: 'rgba(0,0,0,0.07)',
+        ink: '#171327', muted: '#665E80',
+        accent: '#C5B4FF', accentInk: '#171327',
+        mapBg: '#EEEAF5', mapLine: '#CDC6DE',
+        successFg: '#0B7E3E', successBg: '#DDF1E1',
+        warnBg: '#FFE0BE', warnBorder: '#EFBE6F',
+      },
+      blue: {
+        canvas: '#F1F4F8', surface: '#FFFFFF', border: 'rgba(0,0,0,0.07)',
+        ink: '#0C1A2E', muted: '#5C6A82',
+        accent: '#3D6BFF', accentInk: '#FFFFFF',
+        mapBg: '#E8ECF2', mapLine: '#C2CADA',
+        successFg: '#0B7E3E', successBg: '#DDF1E1',
+        warnBg: '#FFE3A8', warnBorder: '#F0C45C',
+      },
+    };
+
+    const PALETTE_SWATCHES = {
+      lime:   ['#B8FF3C','#0F0F0F','#F4F4EF'],
+      coral:  ['#FF7849','#1A1110','#F8F4F0'],
+      violet: ['#C5B4FF','#171327','#F5F3FA'],
+      blue:   ['#3D6BFF','#0C1A2E','#F1F4F8'],
+    };
+
+    // ─────────────────────────────────────────────────────────
+    // App
+    // ─────────────────────────────────────────────────────────
+    function App() {
+      const [t, setTweak] = useTweaks({
+        palette: 'coral',
+        showRail: true,
+        section: 0,
+      });
+      const theme = PALETTES[t.palette] || PALETTES.lime;
+
+      const sections = [
+        { id: 'mapa',  Comp: MapSection,    label: 'Mapa',         bg: theme.canvas, accent: false },
+        { id: 'hoy',   Comp: OrdersSection, label: 'Pedidos',      bg: theme.canvas, accent: false },
+        { id: 'stats', Comp: StatsSection,  label: 'Estadísticas', bg: theme.accent, accent: true  },
+      ];
+
+      // Chat drawer state + swipe handling
+      const [chatOpen, setChatOpen] = useState(false);
+      const [openConvId, setOpenConvId] = useState(null);
+      const [reveal, setReveal] = useState(null); // { color, x, y } for circle reveal
+      const [unreadByConv, setUnreadByConv] = useState({ tony: 2 });
+      const [toast, setToast] = useState(null);  // { name, tag, color, message, convId, shown }
+      const toastTimerRef = useRef(null);
+      const dismissToast = () => {
+        setToast(null);
+        if (toastTimerRef.current) {
+          clearTimeout(toastTimerRef.current);
+          toastTimerRef.current = null;
+        }
+      };
+      const unreadCount = Object.values(unreadByConv).reduce((a,b) => a+b, 0);
+
+      // Demo: simulate an incoming message a few seconds after load while chat is closed
+      useEffect(() => {
+        const fire = (payload, delay) => setTimeout(() => {
+          if (chatOpen) return;
+          setUnreadByConv(s => ({ ...s, [payload.convId]: (s[payload.convId] || 0) + 1 }));
+          setToast({ ...payload, shown: false });
+          // next frame: trigger CSS transition by flipping `shown`
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            setToast(t => t ? { ...t, shown: true } : null);
+          }));
+          // auto-dismiss after 5s
+          toastTimerRef.current = setTimeout(() => {
+            setToast(t => t ? { ...t, shown: false } : null);
+            setTimeout(() => setToast(null), 400);
+          }, 5000);
+        }, delay);
+
+        const ids = [
+          fire({ convId: 'tony', name: 'Tony Prado', tag: 'TP', color: theme.accent,
+                 message: 'Recuerda mandar reporte al llegar.' }, 4500),
+        ];
+        return () => ids.forEach(clearTimeout);
+        // eslint-disable-next-line
+      }, []);
+
+      // When chat opens, clear unread for the active conversation
+      useEffect(() => {
+        if (chatOpen && openConvId) {
+          setUnreadByConv(s => ({ ...s, [openConvId]: 0 }));
+        }
+      }, [chatOpen, openConvId]);
+
+      const [dragX, setDragX] = useState(null);
+      const drawerRef = useRef(null);
+      const dragStart = useRef(null);
+
+      const onTouchStart = (e) => {
+        // ignore if user is interacting with a scrollable child horizontally
+        const x = e.touches ? e.touches[0].clientX : e.clientX;
+        const y = e.touches ? e.touches[0].clientY : e.clientY;
+        dragStart.current = { x, y, openAtStart: chatOpen, decided: false, horizontal: false };
+      };
+      const onTouchMove = (e) => {
+        if (!dragStart.current) return;
+        const x = e.touches ? e.touches[0].clientX : e.clientX;
+        const y = e.touches ? e.touches[0].clientY : e.clientY;
+        const dx = x - dragStart.current.x;
+        const dy = y - dragStart.current.y;
+        if (!dragStart.current.decided) {
+          // need a small threshold before deciding gesture direction
+          if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+          dragStart.current.decided = true;
+          dragStart.current.horizontal = Math.abs(dx) > Math.abs(dy) * 1.1;
+        }
+        if (!dragStart.current.horizontal) return;
+        setDragX(dx);
+      };
+      const onTouchEnd = (e) => {
+        if (!dragStart.current) return;
+        const dx = dragX || 0;
+        const w = 390;
+        const openAtStart = dragStart.current.openAtStart;
+        // If closed → open by swiping left (dx < -60)
+        // If open  → close by swiping right (dx > 80)
+        if (!openAtStart && dx < -60) setChatOpen(true);
+        else if (openAtStart && dx > 80) setChatOpen(false);
+        dragStart.current = null;
+        setDragX(null);
+      };
+
+      // Compute live transform for the drawer
+      const drawerTransform = useMemo(() => {
+        if (dragX === null) return chatOpen ? 'translateX(0%)' : 'translateX(100%)';
+        const w = 390;
+        if (chatOpen) {
+          // open, dragging right closes; clamp 0..w
+          const x = Math.max(0, Math.min(w, dragX));
+          return `translateX(${x}px)`;
+        } else {
+          // closed, dragging left opens; clamp -w..0
+          const x = Math.max(-w, Math.min(0, dragX));
+          return `translateX(${w + x}px)`;
+        }
+      }, [dragX, chatOpen]);
+
+      const scrimOpacity = useMemo(() => {
+        if (dragX === null) return chatOpen ? 1 : 0;
+        const w = 390;
+        if (chatOpen) {
+          const x = Math.max(0, Math.min(w, dragX));
+          return 1 - (x / w);
+        } else {
+          const x = Math.max(-w, Math.min(0, dragX));
+          return -x / w;
+        }
+      }, [dragX, chatOpen]);
+
+      const scrollRef = useRef(null);
+      const [activeSection, setActiveSection] = useState(0);
+
+      useEffect(() => {
+        const root = scrollRef.current;
+        if (!root) return;
+        const els = root.querySelectorAll('section[data-screen-label]');
+        const obs = new IntersectionObserver((entries) => {
+          entries.forEach(e => {
+            if (e.isIntersecting && e.intersectionRatio > 0.55) {
+              const i = [...els].indexOf(e.target);
+              if (i >= 0) setActiveSection(i);
+            }
+          });
+        }, { root, threshold: [0.55, 0.7] });
+        els.forEach(el => obs.observe(el));
+        return () => obs.disconnect();
+      }, []);
+
+      const goTo = (i) => {
+        const root = scrollRef.current;
+        if (!root) return;
+        const els = root.querySelectorAll('section[data-screen-label]');
+        els[i]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setActiveSection(i);
+      };
+
+      useEffect(() => { goTo(t.section); }, [t.section]);
+
+      const railOnAccent = activeSection === 2;
+      const statusDark = false;
+      // Status bar text color adapts: dark text on light bg, dark on accent (it's high-contrast)
+
+      return (
+        <div className="stage">
+          <div
+            className="device"
+            style={{ background: theme.canvas, ['--accent']: theme.accent }}
+            onPointerDown={onTouchStart}
+            onPointerMove={onTouchMove}
+            onPointerUp={onTouchEnd}
+            onPointerCancel={onTouchEnd}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
+            <div className="island"/>
+            <div ref={scrollRef} className="snap">
+              {sections.map(s => (
+                <s.Comp key={s.id} theme={theme} />
+              ))}
+            </div>
+            <StatusBar dark={statusDark} color={theme.ink}/>
+
+            {/* Floating Chat FAB — always visible */}
+            {(() => {
+              const onAccentBg = activeSection === 2;
+              const fabBg   = onAccentBg ? theme.ink : theme.accent;
+              const fabFg   = onAccentBg ? theme.canvas : theme.ink;
+              const badgeBg = onAccentBg ? theme.accent : theme.ink;
+              const badgeFg = onAccentBg ? theme.ink : theme.canvas;
+              const pulseRgba = onAccentBg
+                ? 'rgba(15,15,15,0.45)'
+                : (theme.pulse || 'rgba(255,120,73,0.55)');
+              return (
+                <button
+                  className="chat-fab"
+                  onClick={() => { setChatOpen(true); setOpenConvId(null); dismissToast(); }}
+                  aria-label="Abrir chat"
+                  style={{
+                    background: fabBg, color: fabFg,
+                    boxShadow: `0 14px 32px ${onAccentBg ? 'rgba(0,0,0,0.32)' : 'rgba(0,0,0,0.18)'}, 0 0 0 1px rgba(0,0,0,0.06) inset`,
+                    opacity: chatOpen ? 0 : 1,
+                    pointerEvents: chatOpen ? 'none' : 'auto',
+                    ['--pulse-color']: pulseRgba,
+                  }}
+                >
+                  <Icon name="message-circle" size={24} strokeWidth={2.2}/>
+                  {unreadCount > 0 && (
+                    <span className="badge" style={{ background: badgeBg, color: badgeFg, borderColor: fabBg }}>
+                      {unreadCount}
+                    </span>
+                  )}
+                  <span className="pulse"/>
+                </button>
+              );
+            })()}
+
+            {/* Incoming notification toast */}
+            {toast && (
+              <div
+                className={`toast ${toast.shown ? 'show' : ''}`}
+                onClick={() => {
+                  setChatOpen(true);
+                  setOpenConvId(toast.convId);
+                  dismissToast();
+                }}
+              >
+                <div className="avatar" style={{ background: toast.color }}>{toast.tag}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="name">
+                    {toast.name}
+                    <span style={{
+                      width: 6, height: 6, borderRadius: 4, background: theme.accent,
+                    }}/>
+                  </div>
+                  <div className="msg">{toast.message}</div>
+                </div>
+                <div className="time">ahora</div>
+              </div>
+            )}
+
+            {t.showRail && (
+              <div
+                className={`rail ${railOnAccent ? 'dark' : ''}`}
+                style={{ opacity: chatOpen ? 0 : 1, transition: 'opacity 0.2s', pointerEvents: chatOpen ? 'none' : 'auto' }}
+              >
+                {sections.map((s, i) => (
+                  <button key={s.id} onClick={() => goTo(i)} aria-label={s.label}>
+                    <span className={`dot ${activeSection === i ? 'active' : ''}`}/>
+                    <span className="label">{s.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Scrim */}
+            <div
+              className={`drawer-scrim ${chatOpen ? 'open' : ''}`}
+              style={{ opacity: scrimOpacity, pointerEvents: chatOpen ? 'auto' : 'none' }}
+              onClick={() => setChatOpen(false)}
+            />
+
+            {/* Chat drawer */}
+            <div
+              ref={drawerRef}
+              className={`drawer ${dragX !== null ? 'dragging' : ''} ${chatOpen ? 'open' : ''}`}
+              style={{ background: theme.canvas, transform: drawerTransform }}
+            >
+              <div className="drawer-handle"/>
+              <ChatSection
+                theme={theme}
+                onClose={() => { setChatOpen(false); setOpenConvId(null); setReveal(null); }}
+                openConvId={openConvId}
+                onOpenConv={(conv, ev) => {
+                  const dRect = drawerRef.current?.getBoundingClientRect();
+                  const r = ev.currentTarget.getBoundingClientRect();
+                  const x = dRect ? r.left + r.width/2 - dRect.left : 195;
+                  const y = dRect ? r.top  + r.height/2 - dRect.top : 200;
+                  setReveal({ color: conv.color, x, y, ts: Date.now() });
+                  // open conversation after the reveal expansion has begun
+                  setTimeout(() => setOpenConvId(conv.id), 80);
+                  // unread for that conv → 0
+                  setUnreadByConv(s => ({ ...s, [conv.id]: 0 }));
+                  // clear reveal overlay after animation
+                  setTimeout(() => setReveal(null), 800);
+                }}
+                onBackToList={() => setOpenConvId(null)}
+                reveal={reveal}
+                unreadByConv={unreadByConv}
+              />
+            </div>
+
+            <div className="home-indicator"/>
+          </div>
+
+          <TweaksPanel
+            t={t}
+            setTweak={setTweak}
+            sections={sections}
+            activeSection={activeSection}
+          />
+        </div>
+      );
+    }
+
+    function TweaksPanel({ t, setTweak, sections, activeSection }) {
+      const [show, setShow] = useState(false);
+      const [available, setAvailable] = useState(false);
+
+      useEffect(() => {
+        const onMsg = (e) => {
+          if (e.data?.type === '__activate_edit_mode') setShow(true);
+          if (e.data?.type === '__deactivate_edit_mode') setShow(false);
+        };
+        window.addEventListener('message', onMsg);
+        window.parent.postMessage({type: '__edit_mode_available'}, '*');
+        setAvailable(true);
+        return () => window.removeEventListener('message', onMsg);
+      }, []);
+
+      // Sync select with currently visible section
+      useEffect(() => {
+        if (t.section !== activeSection) setTweak('section', activeSection);
+        // eslint-disable-next-line
+      }, [activeSection]);
+
+      if (!show) return null;
+      return (
+        <div className="tw-panel">
+          <h4>Tweaks</h4>
+          <div className="tw-row">
+            <label>Paleta</label>
+            <div className="tw-swatches">
+              {Object.entries(PALETTE_SWATCHES).map(([k, sw]) => (
+                <button key={k} className={t.palette === k ? 'active' : ''}
+                        onClick={() => setTweak('palette', k)}>
+                  <div className="row">
+                    {sw.map((c, i) => <div key={i} style={{ background: c }}/>)}
+                  </div>
+                  <span>{k}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="tw-row">
+            <label>Sección</label>
+            <select className="tw-select" value={t.section}
+                    onChange={(e) => setTweak('section', Number(e.target.value))}>
+              {sections.map((s, i) => (
+                <option key={s.id} value={i}>{`0${i+1} — ${s.label}`}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className={`tw-toggle ${t.showRail ? 'on' : ''}`}
+               onClick={() => setTweak('showRail', !t.showRail)}>
+            <span>Indicador lateral</span>
+            <span className="sw"/>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  })();
+  </script>
+</body>
+</html>

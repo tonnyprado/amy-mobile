@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { geocodificarYActualizarPedido } from '../services/geocodingApi';
@@ -106,7 +109,11 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
       transparent={true}
       onRequestClose={handleCerrar}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
@@ -117,7 +124,12 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
           </View>
 
           {/* Contenido */}
-          <View style={styles.content}>
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.contentContainer}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
+          >
             {/* Info del pedido */}
             <View style={styles.pedidoInfo}>
               <Text style={styles.pedidoLabel}>Pedido:</Text>
@@ -270,9 +282,9 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
                 )}
               </TouchableOpacity>
             </View>
-          </View>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -307,6 +319,9 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   content: {
+    flex: 1,
+  },
+  contentContainer: {
     padding: 20,
   },
   pedidoInfo: {

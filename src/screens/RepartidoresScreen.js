@@ -8,16 +8,21 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
-  Platform,
   RefreshControl
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { obtenerRepartidores } from '../services/adminApi';
+import { enviarAnuncioChat } from '../services/chatApi';
+import AnnouncementComposerModal from '../components/chat/AnnouncementComposerModal';
+import theme from '../theme';
 
 export default function RepartidoresScreen({ navigation }) {
   const [repartidores, setRepartidores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [announcementOpen, setAnnouncementOpen] = useState(false);
+  const [sendingAnnouncement, setSendingAnnouncement] = useState(false);
 
   useEffect(() => {
     cargarRepartidores();
@@ -73,48 +78,32 @@ export default function RepartidoresScreen({ navigation }) {
     );
   };
 
-  const handleEnviarMensaje = (telefono, nombre) => {
-    if (!telefono) {
-      Alert.alert(
-        'Sin Teléfono',
-        `No hay número de teléfono registrado para ${nombre}`,
-        [{ text: 'OK' }]
-      );
-      return;
+  const handleAbrirChat = (usuario) => {
+    navigation.navigate('ChatConversation', {
+      contactUserId: usuario.id,
+      title: usuario.nombre,
+    });
+  };
+
+  const handleSubmitAnnouncement = async (payload) => {
+    try {
+      setSendingAnnouncement(true);
+      await enviarAnuncioChat(payload);
+      setAnnouncementOpen(false);
+      Alert.alert('Anuncio enviado', 'El anuncio ya quedó guardado dentro del chat de los destinatarios.');
+    } catch (announcementError) {
+      Alert.alert('Error', announcementError.message || 'No se pudo enviar el anuncio');
+    } finally {
+      setSendingAnnouncement(false);
     }
+  };
 
-    const phoneNumber = telefono.replace(/\s+/g, ''); // Remover espacios
-    const mensaje = 'Hola, te contacto desde AMY Business.';
-
-    // URL para WhatsApp o SMS según la plataforma
-    const whatsappUrl = `whatsapp://send?phone=${phoneNumber}&text=${encodeURIComponent(mensaje)}`;
-    const smsUrl = Platform.OS === 'ios'
-      ? `sms:${phoneNumber}&body=${encodeURIComponent(mensaje)}`
-      : `sms:${phoneNumber}?body=${encodeURIComponent(mensaje)}`;
-
+  const handleEditarRepartidor = (repartidor) => {
+    // Aquí puedes implementar la navegación a una pantalla de edición
     Alert.alert(
-      'Enviar Mensaje',
-      `¿Cómo deseas contactar a ${nombre}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'WhatsApp',
-          onPress: async () => {
-            const canOpen = await Linking.canOpenURL(whatsappUrl);
-            if (canOpen) {
-              Linking.openURL(whatsappUrl);
-            } else {
-              Alert.alert('Error', 'No se pudo abrir WhatsApp');
-            }
-          }
-        },
-        {
-          text: 'SMS',
-          onPress: () => {
-            Linking.openURL(smsUrl);
-          }
-        }
-      ]
+      'Editar Repartidor',
+      `Funcionalidad de edición para ${repartidor.nombre}`,
+      [{ text: 'OK' }]
     );
   };
 
@@ -139,6 +128,13 @@ export default function RepartidoresScreen({ navigation }) {
 
         <View style={styles.actionsContainer}>
           <TouchableOpacity
+            style={[styles.actionButton, styles.editButton]}
+            onPress={() => handleEditarRepartidor(item)}
+          >
+            <Ionicons name="create-outline" size={18} color="#ffffff" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.actionButton, styles.callButton]}
             onPress={() => handleLlamar(item.telefono, item.nombre)}
           >
@@ -148,10 +144,10 @@ export default function RepartidoresScreen({ navigation }) {
 
           <TouchableOpacity
             style={[styles.actionButton, styles.messageButton]}
-            onPress={() => handleEnviarMensaje(item.telefono, item.nombre)}
+            onPress={() => handleAbrirChat(item)}
           >
             <Text style={styles.actionIcon}>💬</Text>
-            <Text style={styles.actionText}>Mensaje</Text>
+            <Text style={styles.actionText}>Chat</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -170,7 +166,12 @@ export default function RepartidoresScreen({ navigation }) {
             <Text style={styles.backButtonText}>← Atrás</Text>
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Repartidores</Text>
-          <View style={styles.placeholder} />
+          <TouchableOpacity
+            style={styles.announcementButton}
+            onPress={() => setAnnouncementOpen(true)}
+          >
+            <Ionicons name="megaphone" size={22} color="#ffffff" />
+          </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2563eb" />
@@ -193,7 +194,12 @@ export default function RepartidoresScreen({ navigation }) {
           <Text style={styles.backButtonText}>← Atrás</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Repartidores</Text>
-        <View style={styles.placeholder} />
+        <TouchableOpacity
+          style={styles.announcementButton}
+          onPress={() => setAnnouncementOpen(true)}
+        >
+          <Ionicons name="megaphone" size={22} color="#ffffff" />
+        </TouchableOpacity>
       </View>
 
       {/* Estadísticas */}
@@ -230,6 +236,14 @@ export default function RepartidoresScreen({ navigation }) {
           </View>
         }
       />
+
+      <AnnouncementComposerModal
+        visible={announcementOpen}
+        onClose={() => setAnnouncementOpen(false)}
+        contacts={repartidores}
+        loading={sendingAnnouncement}
+        onSubmit={handleSubmitAnnouncement}
+      />
     </View>
   );
 }
@@ -261,8 +275,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
   },
-  placeholder: {
-    width: 60,
+  announcementButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -366,6 +385,11 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     gap: 8,
+  },
+  editButton: {
+    flex: 0,
+    width: 48,
+    backgroundColor: '#64748b',
   },
   callButton: {
     backgroundColor: '#10b981',

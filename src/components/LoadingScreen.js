@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import theme from '../theme';
 
 /**
  * Pantalla de carga reutilizable
@@ -9,7 +10,7 @@ import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 export default function LoadingScreen({ message = 'Cargando...' }) {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#2563eb" />
+      <ActivityIndicator size="large" color={theme.colors.primary} />
       <Text style={styles.message}>{message}</Text>
     </View>
   );
@@ -20,11 +21,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
   },
   message: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#64748b',
+    marginTop: theme.spacing.lg,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.textSecondary,
+    fontWeight: theme.typography.weights.semibold,
   },
 });

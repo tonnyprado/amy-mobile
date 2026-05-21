@@ -1,12 +1,13 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, Animated } from 'react-native';
+import theme from '../theme';
 
 /**
- * Componente Button reutilizable
+ * Componente Button reutilizable con animaciones
  * @param {Object} props
  * @param {string} props.title - Texto del botón
  * @param {Function} props.onPress - Función al presionar
- * @param {string} props.variant - 'primary' | 'secondary' | 'success' | 'danger'
+ * @param {string} props.variant - 'primary' | 'secondary' | 'success' | 'danger' | 'ghost' | 'outline'
  * @param {boolean} props.disabled - Si está deshabilitado
  * @param {boolean} props.loading - Si está cargando
  * @param {Object} props.style - Estilos adicionales
@@ -20,11 +21,33 @@ export default function Button({
   style,
   ...props
 }) {
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 3,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 3,
+    }).start();
+  };
+
   const variantStyles = {
     primary: styles.primary,
     secondary: styles.secondary,
     success: styles.success,
     danger: styles.danger,
+    ghost: styles.ghost,
+    outline: styles.outline,
   };
 
   const variantTextStyles = {
@@ -32,78 +55,108 @@ export default function Button({
     secondary: styles.secondaryText,
     success: styles.successText,
     danger: styles.dangerText,
+    ghost: styles.ghostText,
+    outline: styles.outlineText,
   };
 
+  const spinnerColor =
+    variant === 'ghost' || variant === 'outline'
+      ? theme.colors.primary
+      : theme.colors.textOnPrimary;
+
   return (
-    <TouchableOpacity
-      style={[
-        styles.button,
-        variantStyles[variant],
-        disabled && styles.disabled,
-        style
-      ]}
-      onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.7}
-      {...props}
-    >
-      {loading ? (
-        <ActivityIndicator color={variant === 'secondary' ? '#000' : '#fff'} />
-      ) : (
-        <Text style={[styles.text, variantTextStyles[variant]]}>
-          {title}
-        </Text>
-      )}
-    </TouchableOpacity>
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity
+        style={[
+          styles.button,
+          variantStyles[variant],
+          disabled && styles.disabled,
+          style,
+        ]}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={disabled || loading}
+        activeOpacity={0.9}
+        {...props}
+      >
+        {loading ? (
+          <ActivityIndicator color={spinnerColor} />
+        ) : (
+          <Text style={[styles.text, variantTextStyles[variant]]}>
+            {title}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: theme.borderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 52,
   },
   text: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    letterSpacing: 0.5,
   },
 
   // Variants
   primary: {
-    backgroundColor: '#2563eb',
+    backgroundColor: theme.colors.primary,
+    ...theme.shadows.purple,
   },
   primaryText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
   },
 
   secondary: {
-    backgroundColor: '#f1f5f9',
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
+    backgroundColor: theme.colors.secondary,
+    ...theme.shadows.red,
   },
   secondaryText: {
-    color: '#334155',
+    color: theme.colors.textOnPrimary,
   },
 
   success: {
-    backgroundColor: '#10b981',
+    backgroundColor: theme.colors.success,
+    ...theme.shadows.md,
   },
   successText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
   },
 
   danger: {
-    backgroundColor: '#ef4444',
+    backgroundColor: theme.colors.error,
+    ...theme.shadows.red,
   },
   dangerText: {
-    color: '#ffffff',
+    color: theme.colors.textOnPrimary,
+  },
+
+  ghost: {
+    backgroundColor: 'transparent',
+  },
+  ghostText: {
+    color: theme.colors.primary,
+  },
+
+  outline: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: theme.colors.primary,
+  },
+  outlineText: {
+    color: theme.colors.primary,
   },
 
   disabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
 });

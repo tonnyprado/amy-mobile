@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import theme from '../theme';
 
 /**
  * Indicador de estado del GPS
@@ -8,7 +10,7 @@ export default function GPSStatusIndicator({ tracking, ubicacion, ultimoEnvio, e
   if (error && !tracking) {
     return (
       <View style={[styles.container, styles.errorContainer]}>
-        <Text style={styles.errorIcon}>⚠️</Text>
+        <Ionicons name="warning" size={20} color={theme.colors.error} />
         <View style={styles.textContainer}>
           <Text style={styles.errorTitle}>GPS Error</Text>
           <Text style={styles.errorText}>{error}</Text>
@@ -20,7 +22,7 @@ export default function GPSStatusIndicator({ tracking, ubicacion, ultimoEnvio, e
   if (tracking) {
     return (
       <View style={[styles.container, styles.successContainer]}>
-        <Text style={styles.successIcon}>📍</Text>
+        <Ionicons name="location" size={20} color={theme.colors.success} />
         <View style={styles.textContainer}>
           <Text style={styles.successTitle}>GPS Activo - Rastreando ubicación</Text>
           {ultimoEnvio && (
@@ -45,56 +47,49 @@ export default function GPSStatusIndicator({ tracking, ubicacion, ultimoEnvio, e
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: theme.spacing.lg,
     alignItems: 'flex-start',
+    gap: theme.spacing.sm,
   },
   successContainer: {
-    backgroundColor: '#d1fae5',
+    backgroundColor: theme.colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: '#86efac',
+    borderColor: theme.colors.success,
   },
   errorContainer: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: theme.colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: '#fca5a5',
-  },
-  successIcon: {
-    fontSize: 20,
-    marginRight: 8,
-  },
-  errorIcon: {
-    fontSize: 20,
-    marginRight: 8,
+    borderColor: theme.colors.error,
   },
   textContainer: {
     flex: 1,
   },
   successTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#065f46',
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.success,
     marginBottom: 2,
   },
   errorTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#991b1b',
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.error,
     marginBottom: 2,
   },
   errorText: {
-    fontSize: 12,
-    color: '#991b1b',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.error,
   },
   subtitle: {
-    fontSize: 12,
-    color: '#047857',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
     marginTop: 2,
   },
   details: {
-    fontSize: 11,
-    color: '#059669',
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textMuted,
     marginTop: 2,
   },
 });

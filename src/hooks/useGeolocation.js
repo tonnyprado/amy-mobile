@@ -31,6 +31,9 @@ export function useGeolocation(options = {}) {
   const subscriptionRef = useRef(null);
   const intervalIdRef = useRef(null);
   const ubicacionActualRef = useRef(null);
+  const ultimaUbicacionEnviadaRef = useRef(null);
+  const ultimoEstadoEnviadoRef = useRef(null);
+  const ultimaBateriaRef = useRef({ value: null, timestamp: 0 });
 
   /**
    * Solicita permisos de ubicación al usuario
@@ -62,12 +65,43 @@ export function useGeolocation(options = {}) {
    */
   const obtenerNivelBateria = async () => {
     try {
+      const ahora = Date.now();
+      if (
+        ultimaBateriaRef.current.value !== null &&
+        ahora - ultimaBateriaRef.current.timestamp < 5 * 60 * 1000
+      ) {
+        return ultimaBateriaRef.current.value;
+      }
+
       const level = await Battery.getBatteryLevelAsync();
-      return Math.round(level * 100);
+      const normalizedLevel = Math.round(level * 100);
+      ultimaBateriaRef.current = {
+        value: normalizedLevel,
+        timestamp: ahora,
+      };
+      return normalizedLevel;
     } catch (err) {
       console.warn('No se pudo obtener nivel de batería:', err);
       return null;
     }
+  };
+
+  const calcularDistanciaMetros = (pointA, pointB) => {
+    if (!pointA || !pointB) return Number.MAX_SAFE_INTEGER;
+
+    const toRad = (degrees) => (degrees * Math.PI) / 180;
+    const earthRadius = 6371e3;
+    const deltaLat = toRad(pointB.latitude - pointA.latitude);
+    const deltaLng = toRad(pointB.longitude - pointA.longitude);
+    const lat1 = toRad(pointA.latitude);
+    const lat2 = toRad(pointB.latitude);
+
+    const a =
+      Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) *
+      Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+
+    return earthRadius * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
   };
 
   /**
@@ -80,6 +114,24 @@ export function useGeolocation(options = {}) {
     }
 
     try {
+      const ultimaUbicacionEnviada = ultimaUbicacionEnviadaRef.current;
+      const distanciaRecorrida = ultimaUbicacionEnviada
+        ? calcularDistanciaMetros(ultimaUbicacionEnviada.coords, location.coords)
+        : Number.MAX_SAFE_INTEGER;
+      const tiempoDesdeUltimoEnvio = ultimaUbicacionEnviada
+        ? Date.now() - ultimaUbicacionEnviada.timestamp
+        : Number.MAX_SAFE_INTEGER;
+      const estadoCambio = ultimoEstadoEnviadoRef.current !== estadoActividad;
+      const precision = location.coords.accuracy ?? 9999;
+
+      const debeEnviarPorMovimiento = distanciaRecorrida >= 30;
+      const debeEnviarPorTiempo = tiempoDesdeUltimoEnvio >= Math.max(intervalo * 2, 120000);
+      const precisionAceptable = precision <= 80;
+
+      if (!estadoCambio && (!precisionAceptable || (!debeEnviarPorMovimiento && !debeEnviarPorTiempo))) {
+        return;
+      }
+
       const bateria = await obtenerNivelBateria();
 
       const datos = {
@@ -95,6 +147,14 @@ export function useGeolocation(options = {}) {
       };
 
       await enviarUbicacion(datos);
+      ultimaUbicacionEnviadaRef.current = {
+        coords: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        },
+        timestamp: Date.now(),
+      };
+      ultimoEstadoEnviadoRef.current = estadoActividad;
       setUltimoEnvio(new Date());
       console.log('📍 Ubicación enviada:', {
         lat: datos.latitud.toFixed(6),
@@ -128,9 +188,9 @@ export function useGeolocation(options = {}) {
       // Iniciar watchPosition con expo-location
       subscriptionRef.current = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.BestForNavigation,
-          timeInterval: 5000, // Actualizar cada 5 segundos
-          distanceInterval: 10, // O cada 10 metros
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: Math.max(intervalo, 15000),
+          distanceInterval: 25,
         },
         (location) => {
           const nuevaUbicacion = {
@@ -153,7 +213,7 @@ export function useGeolocation(options = {}) {
         if (ubicacionActualRef.current) {
           enviarUbicacionAlBackend(ubicacionActualRef.current);
         }
-      }, intervalo);
+      }, Math.max(intervalo, 60000));
 
       setTracking(true);
     } catch (err) {

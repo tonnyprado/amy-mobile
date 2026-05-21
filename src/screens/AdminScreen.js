@@ -4,10 +4,13 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert
+  Alert,
+  ScrollView
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
+import theme from '../theme';
 
 export default function AdminScreen({ navigation }) {
   const { user, logout } = useAuth();
@@ -23,65 +26,82 @@ export default function AdminScreen({ navigation }) {
     );
   };
 
+  const menuItems = [
+    {
+      title: 'Escáner de Cajas',
+      subtitle: 'Escanea etiquetas con la cámara',
+      icon: 'scan',
+      color: theme.colors.primary,
+      bgColor: `${theme.colors.primary}15`,
+      onPress: () => navigation.navigate('BoxScanner'),
+    },
+    {
+      title: 'Estadísticas e Incidencias',
+      subtitle: 'Métricas, alertas y análisis detallado',
+      icon: 'stats-chart',
+      color: '#10b981',
+      bgColor: '#dcfce7',
+      onPress: () => navigation.navigate('EstadisticasIncidencias'),
+    },
+    {
+      title: 'Repartidores y Chat',
+      subtitle: 'Lista, mensajes, llamadas y anuncios',
+      icon: 'people',
+      color: theme.colors.success,
+      bgColor: `${theme.colors.success}15`,
+      onPress: () => navigation.navigate('Repartidores'),
+    },
+    {
+      title: 'Monitoreo en Tiempo Real',
+      subtitle: 'Estado de entregas y análisis',
+      icon: 'analytics',
+      color: theme.colors.accent,
+      bgColor: `${theme.colors.accent}15`,
+      onPress: () => navigation.navigate('Monitoreo'),
+    },
+  ];
+
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
-      {/* Header */}
+      {/* Header con gradiente */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Panel Administrativo</Text>
-          <Text style={styles.headerSubtitle}>Hola, {user?.nombre}</Text>
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.greeting}>Hola, {user?.nombre} 👋</Text>
+            <Text style={styles.headerSubtitle}>Panel de Administración</Text>
+          </View>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color={theme.colors.error} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Salir</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Contenido principal */}
-      <View style={styles.content}>
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeEmoji}>👋</Text>
-          <Text style={styles.welcomeTitle}>BIENVENIDA ADMIN</Text>
-          <Text style={styles.welcomeSubtitle}>
-            Panel administrativo
-          </Text>
-        </View>
-
-        {/* Botón Escáner de Cajas */}
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => navigation.navigate('BoxScanner')}
-        >
-          <View style={styles.menuIconContainer}>
-            <Text style={styles.menuIcon}>📦</Text>
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuTitle}>Escáner de Cajas</Text>
-            <Text style={styles.menuSubtitle}>
-              Escanea etiquetas con la cámara
-            </Text>
-          </View>
-          <Text style={styles.menuArrow}>→</Text>
-        </TouchableOpacity>
-
-        {/* Botón Gestión de Repartidores */}
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => navigation.navigate('Repartidores')}
-        >
-          <View style={[styles.menuIconContainer, styles.repartidoresIcon]}>
-            <Text style={styles.menuIcon}>👥</Text>
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={styles.menuTitle}>Repartidores</Text>
-            <Text style={styles.menuSubtitle}>
-              Lista, llamadas y mensajes
-            </Text>
-          </View>
-          <Text style={styles.menuArrow}>→</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Content */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {menuItems.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.menuCard}
+            onPress={item.onPress}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: item.bgColor }]}>
+              <Ionicons name={item.icon} size={28} color={item.color} />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>{item.title}</Text>
+              <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={theme.colors.textMuted} />
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
     </View>
   );
 }
@@ -89,113 +109,79 @@ export default function AdminScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: '#2563eb',
-    padding: 16,
+    backgroundColor: theme.colors.surface,
     paddingTop: 48,
-    paddingBottom: 20,
+    paddingBottom: theme.spacing.xl,
+    ...theme.shadows.md,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    paddingHorizontal: theme.spacing.xl,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#ffffff',
+  greeting: {
+    fontSize: theme.typography.sizes.xxl,
+    fontWeight: theme.typography.weights.extrabold,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs,
+    letterSpacing: 0.5,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: '#bfdbfe',
-    marginTop: 2,
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    fontWeight: theme.typography.weights.semibold,
   },
   logoutButton: {
-    padding: 8,
-  },
-  logoutText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    padding: 24,
-  },
-  welcomeContainer: {
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 40,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    marginBottom: 24,
-  },
-  welcomeEmoji: {
-    fontSize: 64,
-    marginBottom: 16,
-  },
-  welcomeTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  welcomeSubtitle: {
-    fontSize: 16,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 24,
-  },
-  menuButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    width: '100%',
-    marginBottom: 16,
-  },
-  menuIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 12,
-    backgroundColor: '#dbeafe',
+    width: 48,
+    height: 48,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: `${theme.colors.error}10`,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
   },
-  repartidoresIcon: {
-    backgroundColor: '#dcfce7',
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: theme.spacing.xl,
+    paddingBottom: theme.spacing.xxxl,
+  },
+  menuCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+    ...theme.shadows.md,
   },
   menuIcon: {
-    fontSize: 32,
+    width: 60,
+    height: 60,
+    borderRadius: theme.borderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.lg,
   },
-  menuTextContainer: {
+  menuContent: {
     flex: 1,
   },
   menuTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 4,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs,
+    letterSpacing: 0.3,
   },
   menuSubtitle: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  menuArrow: {
-    fontSize: 24,
-    color: '#2563eb',
-    fontWeight: '700',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textSecondary,
+    fontWeight: theme.typography.weights.medium,
   },
 });

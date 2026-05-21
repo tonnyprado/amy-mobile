@@ -1,15 +1,24 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import theme from '../theme';
 
 /**
- * Componente Card reutilizable
+ * Componente Card reutilizable con sombras suaves
  * @param {Object} props
  * @param {React.ReactNode} props.children - Contenido del card
  * @param {Object} props.style - Estilos adicionales
+ * @param {boolean} props.elevated - Si debe tener elevación adicional
  */
-export default function Card({ children, style, ...props }) {
+export default function Card({ children, style, elevated = false, ...props }) {
   return (
-    <View style={[styles.card, style]} {...props}>
+    <View
+      style={[
+        styles.card,
+        elevated && styles.cardElevated,
+        style,
+      ]}
+      {...props}
+    >
       {children}
     </View>
   );
@@ -17,13 +26,14 @@ export default function Card({ children, style, ...props }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+    ...theme.shadows.md,
+  },
+  cardElevated: {
+    ...theme.shadows.lg,
   },
 });

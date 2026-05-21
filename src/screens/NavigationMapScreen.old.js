@@ -40,12 +40,60 @@ export default function NavigationMapScreen({ route, navigation }) {
   const [instructionsCollapsed, setInstructionsCollapsed] = useState(false);
   const mapRef = useRef(null);
 
-  // Seleccionar el primer pedido por defecto
+  // Estados del temporizador
+  const [tiempoTranscurrido, setTiempoTranscurrido] = useState(0);
+  const [inicioRuta, setInicioRuta] = useState(null);
+  const [alertaMostrada, setAlertaMostrada] = useState(false);
+  const timerRef = useRef(null);
+
+  // Seleccionar el primer pedido por defecto e iniciar temporizador
   useEffect(() => {
     if (pedidos.length > 0 && !pedidoSeleccionado) {
       setPedidoSeleccionado(pedidos[0]);
     }
+
+    // Iniciar temporizador cuando se abre la pantalla
+    if (!inicioRuta) {
+      setInicioRuta(new Date());
+    }
   }, [pedidos]);
+
+  // Temporizador que se actualiza cada segundo
+  useEffect(() => {
+    if (!inicioRuta) return;
+
+    timerRef.current = setInterval(() => {
+      const ahora = new Date();
+      const diferencia = Math.floor((ahora - inicioRuta) / 1000); // segundos
+      setTiempoTranscurrido(diferencia);
+
+      // Verificar si son las 10 AM y mostrar alerta
+      const hora = ahora.getHours();
+      const minutos = ahora.getMinutes();
+
+      if (hora === 10 && minutos === 0 && !alertaMostrada) {
+        setAlertaMostrada(true);
+        Alert.alert(
+          '⚠️ ¡URGENTE! Son las 10:00 AM',
+          'Es hora de acelerar las entregas. Si tienes algún problema, avisa de inmediato al equipo.\n\n' +
+          '📋 Recuerda:\n' +
+          '• Optimiza tu ruta\n' +
+          '• Contacta rápido si no encuentras dirección\n' +
+          '• Reporta cualquier incidencia',
+          [
+            { text: 'Entendido', style: 'default' }
+          ],
+          { cancelable: false }
+        );
+      }
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [inicioRuta, alertaMostrada]);
 
   // Calcular ruta cuando se selecciona un pedido
   useEffect(() => {
@@ -101,7 +149,26 @@ export default function NavigationMapScreen({ route, navigation }) {
   };
 
   const handleClose = () => {
+    // Limpiar temporizador al cerrar
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
     navigation.goBack();
+  };
+
+  // Función para formatear el tiempo transcurrido
+  const formatearTiempo = (segundos) => {
+    const horas = Math.floor(segundos / 3600);
+    const minutos = Math.floor((segundos % 3600) / 60);
+    const segs = segundos % 60;
+    return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}:${segs.toString().padStart(2, '0')}`;
+  };
+
+  // Determinar si el temporizador debe estar en rojo (después de las 10 AM)
+  const esDespuesDeLas10 = () => {
+    const ahora = new Date();
+    const hora = ahora.getHours();
+    return hora >= 10;
   };
 
   const toggleSidebar = () => {
@@ -211,6 +278,21 @@ export default function NavigationMapScreen({ route, navigation }) {
               </Text>
             )}
           </View>
+
+          {/* Temporizador */}
+          <View style={[
+            styles.timerContainer,
+            esDespuesDeLas10() && styles.timerContainerRed
+          ]}>
+            <Text style={styles.timerIcon}>{esDespuesDeLas10() ? '⚠️' : '⏱️'}</Text>
+            <Text style={[
+              styles.timerText,
+              esDespuesDeLas10() && styles.timerTextRed
+            ]}>
+              {formatearTiempo(tiempoTranscurrido)}
+            </Text>
+          </View>
+
           <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
@@ -407,6 +489,36 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 20,
+    color: '#ffffff',
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#10b981',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginHorizontal: 8,
+  },
+  timerContainerRed: {
+    backgroundColor: '#ef4444',
+    shadowColor: '#ef4444',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  timerIcon: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  timerText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+    fontVariant: ['tabular-nums'],
+  },
+  timerTextRed: {
     color: '#ffffff',
   },
   loadingOverlay: {

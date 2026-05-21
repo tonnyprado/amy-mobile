@@ -1,5 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import theme from '../theme';
 
 /**
  * IslandBar - Barra flotante tipo Dynamic Island de iPhone
@@ -34,9 +36,7 @@ export default function IslandBar({
         {isExpanded && pedidoActual ? (
           // Modo expandido - navegación activa
           <>
-            <View style={[styles.icon, styles.iconPulse]}>
-              <Text style={styles.iconText}>📍</Text>
-            </View>
+            <Ionicons name="navigate" size={20} color={theme.colors.primary} />
             <View style={styles.info}>
               <Text style={styles.title}>Navegando a</Text>
               <Text style={styles.subtitle} numberOfLines={1}>
@@ -50,13 +50,11 @@ export default function IslandBar({
         ) : (
           // Modo compacto - solo contador
           <>
-            <View style={styles.icon}>
-              <Text style={styles.iconText}>📦</Text>
-            </View>
+            <Ionicons name="cube" size={20} color={theme.colors.textPrimary} />
             <Text style={styles.text}>
               {pedidosEnRuta} {pedidosEnRuta === 1 ? 'entrega' : 'entregas'} en ruta
             </Text>
-            <Text style={styles.arrow}>→</Text>
+            <Ionicons name="chevron-forward" size={16} color={theme.colors.textMuted} />
           </>
         )}
       </View>
@@ -69,18 +67,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50,
     alignSelf: 'center',
-    backgroundColor: '#0f172a',
-    borderRadius: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.full,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    ...theme.shadows.lg,
     zIndex: 1000,
     minWidth: 200,
   },
@@ -90,53 +83,39 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  icon: {
-    marginRight: 10,
-  },
-  iconPulse: {
-    // Para el pulso, podrías usar Animated.Value
-  },
-  iconText: {
-    fontSize: 20,
+    gap: theme.spacing.md,
   },
   info: {
     flex: 1,
-    marginRight: 8,
   },
   title: {
-    fontSize: 11,
-    color: '#94a3b8',
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textMuted,
     marginBottom: 2,
   },
   subtitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
   },
   text: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginRight: 8,
-  },
-  arrow: {
-    fontSize: 16,
-    color: '#94a3b8',
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textPrimary,
   },
   badge: {
-    backgroundColor: '#2563eb',
-    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.full,
     minWidth: 24,
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 6,
+    paddingHorizontal: theme.spacing.sm,
   },
   badgeText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold,
   },
 });

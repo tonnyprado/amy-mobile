@@ -7,12 +7,13 @@ import {
   Platform,
   ScrollView,
   Alert,
-  Image
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Van } from 'lucide-react-native';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import theme from '../theme';
 
 export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
@@ -68,9 +69,9 @@ export default function LoginScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          {/* Logo o icono de la app */}
+          {/* Logo con gradiente violeta */}
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>📦</Text>
+            <Van size={56} color={theme.colors.textOnPrimary} strokeWidth={2.5} />
           </View>
           <Text style={styles.title}>AMY Delivery</Text>
           <Text style={styles.subtitle}>Portal de Repartidores y Administradores</Text>
@@ -106,6 +107,7 @@ export default function LoginScreen({ navigation }) {
             title="Iniciar Sesión"
             onPress={handleLogin}
             loading={loading}
+            variant="primary"
             style={styles.loginButton}
           />
         </View>
@@ -123,51 +125,52 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 24,
+    padding: theme.spacing.xxxl,
   },
   header: {
     alignItems: 'center',
     marginBottom: 48,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    backgroundColor: '#2563eb',
+    width: 100,
+    height: 100,
+    borderRadius: theme.borderRadius.xl,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoText: {
-    fontSize: 48,
+    marginBottom: theme.spacing.xl,
+    ...theme.shadows.purple,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#0f172a',
-    marginBottom: 8,
+    fontSize: theme.typography.sizes.xxxl,
+    fontWeight: theme.typography.weights.extrabold,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+    letterSpacing: 0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#64748b',
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    fontWeight: theme.typography.weights.medium,
   },
   form: {
-    marginBottom: 24,
+    marginBottom: theme.spacing.xl,
   },
   loginButton: {
-    marginTop: 8,
+    marginTop: theme.spacing.md,
   },
   footer: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: theme.spacing.xxxl,
   },
   footerText: {
-    fontSize: 12,
-    color: '#94a3b8',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textMuted,
   },
 });

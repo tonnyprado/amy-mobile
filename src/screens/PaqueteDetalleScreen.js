@@ -6,26 +6,31 @@ import {
   ScrollView,
   Alert,
   Linking,
-  TouchableOpacity,
-  Image
+  TouchableOpacity
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
+import { Van } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import Card from '../components/Card';
-import SignaturePad from '../components/SignaturePad';
+import Badge from '../components/ui/Badge';
+// import SignaturePad from '../components/SignaturePad'; // Deshabilitado por ahora
 import AnimatedIcon, { ANIMATED_ICONS } from '../components/AnimatedIcon';
 import AddressSearchModal from '../components/AddressSearchModal';
+import AuthenticatedImage from '../components/AuthenticatedImage';
 import { registrarIntentoEntrega, obtenerDetallePedido } from '../services/repartidorApi';
 import { subirFirma, subirMultiplesFotos } from '../services/uploadService';
 import { S3_ENABLED } from '../config/s3Config';
+import { optimizarImagenLocal } from '../utils/fileHelpers';
+import theme from '../theme';
 
 const ESTADOS_CONFIG = {
-  PENDIENTE: { label: 'Pendiente', color: '#64748b', bgColor: '#f1f5f9' },
-  EN_RUTA: { label: 'En ruta', color: '#2563eb', bgColor: '#dbeafe' },
-  ENTREGADO: { label: 'Entregado', color: '#10b981', bgColor: '#d1fae5' },
-  NO_ENTREGADO: { label: 'No entregado', color: '#ef4444', bgColor: '#fee2e2' }
+  PENDIENTE: { label: 'Pendiente', variant: 'neutral' },
+  EN_RUTA: { label: 'En ruta', variant: 'info' },
+  ENTREGADO: { label: 'Entregado', variant: 'success' },
+  NO_ENTREGADO: { label: 'No entregado', variant: 'error' }
 };
 
 const RECIBIDO_POR = {
@@ -48,10 +53,10 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
   const [notasEntrega, setNotasEntrega] = useState(paquete.evidencias?.notasEntrega || '');
   const [motivoNoEntrega, setMotivoNoEntrega] = useState(paquete.evidencias?.motivoNoEntrega || '');
   const [fotos, setFotos] = useState(paquete.evidencias?.fotos || []);
-  const [firma, setFirma] = useState(paquete.evidencias?.firma || '');
+  // const [firma, setFirma] = useState(paquete.evidencias?.firma || ''); // Firma deshabilitada por ahora
   const [loading, setLoading] = useState(false);
 
-  // Datos completos de la boleta (cuando está entregado/no entregado)
+  // Datos completos de la boleta (para obtener productos/AFP's)
   const [boletaCompleta, setBoletaCompleta] = useState(null);
   const [loadingBoleta, setLoadingBoleta] = useState(false);
 
@@ -60,15 +65,14 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
 
   const estadoConfig = ESTADOS_CONFIG[paquete.estado] || ESTADOS_CONFIG.PENDIENTE;
 
-  // Determinar si mostrar vista de boleta o vista de captura
-  const esModoLectura = paquete.estado === 'ENTREGADO' || paquete.estado === 'NO_ENTREGADO';
+  // DESHABILITADO: Por ahora solo usamos la vista simplificada para repartidores
+  // const esModoLectura = paquete.estado === 'ENTREGADO' || paquete.estado === 'NO_ENTREGADO';
+  const esModoLectura = false; // Siempre usar vista simplificada
 
-  // Cargar datos completos de la boleta en modo lectura
+  // Cargar datos completos de la boleta (siempre, para obtener AFP's)
   useEffect(() => {
-    if (esModoLectura) {
-      cargarBoletaCompleta();
-    }
-  }, [paquete.id, esModoLectura]);
+    cargarBoletaCompleta();
+  }, [paquete.id]);
 
   // Actualizar estados cuando cambian las evidencias del paquete
   useEffect(() => {
@@ -78,7 +82,7 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
       setNotasEntrega(paquete.evidencias.notasEntrega || '');
       setMotivoNoEntrega(paquete.evidencias.motivoNoEntrega || '');
       setFotos(paquete.evidencias.fotos || []);
-      setFirma(paquete.evidencias.firma || '');
+      // setFirma(paquete.evidencias.firma || ''); // Firma deshabilitada
     }
   }, [paquete.evidencias]);
 
@@ -156,13 +160,18 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
       allowsEditing: false,
-      quality: 0.7,
+      quality: 0.55,
     });
 
     if (!result.canceled && result.assets[0]) {
+      const optimizedImage = await optimizarImagenLocal(result.assets[0].uri, {
+        quality: 0.6,
+        maxWidth: 1280,
+      });
+
       setFotos([...fotos, {
         id: Date.now().toString(),
-        uri: result.assets[0].uri,
+        uri: optimizedImage.uri,
         name: `foto_${Date.now()}.jpg`
       }]);
     }
@@ -197,17 +206,17 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
             setLoading(true);
             try {
               // Subir evidencias a S3 (o usar base64 si S3 está deshabilitado)
-              let firmaUrl = null;
+              // let firmaUrl = null; // Firma deshabilitada por ahora
               let fotosUrls = [];
 
-              // Subir firma (si existe)
-              if (firma) {
-                console.log(`[EVIDENCIAS] Subiendo firma... (S3: ${S3_ENABLED ? 'Habilitado' : 'Deshabilitado'})`);
-                firmaUrl = await subirFirma({
-                  dataURI: firma,
-                  pedidoId: paquete.id,
-                });
-              }
+              // DESHABILITADO: Subir firma
+              // if (firma) {
+              //   console.log(`[EVIDENCIAS] Subiendo firma... (S3: ${S3_ENABLED ? 'Habilitado' : 'Deshabilitado'})`);
+              //   firmaUrl = await subirFirma({
+              //     dataURI: firma,
+              //     pedidoId: paquete.id,
+              //   });
+              // }
 
               // Subir fotos (si existen)
               if (fotos.length > 0) {
@@ -230,7 +239,7 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
                 descripcionFallo: nuevoEstado === 'NO_ENTREGADO' ? motivoNoEntrega : null,
                 observaciones: notasEntrega || null,
                 fotoEvidenciaUrl: fotosUrls.length > 0 ? fotosUrls[0].url : null,
-                firmaUrl: firmaUrl,
+                firmaUrl: null, // Firma deshabilitada por ahora
                 nombreReceptor: nombreRecibe || null,
                 recibidoPor: relacionRecibe || null
               });
@@ -253,24 +262,24 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
     );
   };
 
-  // Renderizar según el modo
-  if (esModoLectura) {
-    return (
-      <View style={styles.container}>
-        <StatusBar style="light" />
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-          <VistaBoletaDespacho
-            paquete={paquete}
-            boleta={boletaCompleta}
-            loading={loadingBoleta}
-            estadoConfig={estadoConfig}
-            formatearFechaSola={formatearFechaSola}
-            formatearHora={formatearHora}
-          />
-        </ScrollView>
-      </View>
-    );
-  }
+  // DESHABILITADO: Vista de boleta completa comentada por ahora
+  // if (esModoLectura) {
+  //   return (
+  //     <View style={styles.container}>
+  //       <StatusBar style="light" />
+  //       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+  //         <VistaBoletaDespacho
+  //           paquete={paquete}
+  //           boleta={boletaCompleta}
+  //           loading={loadingBoleta}
+  //           estadoConfig={estadoConfig}
+  //           formatearFechaSola={formatearFechaSola}
+  //           formatearHora={formatearHora}
+  //         />
+  //       </ScrollView>
+  //     </View>
+  //   );
+  // }
 
   return (
     <View style={styles.container}>
@@ -278,12 +287,11 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <Card style={styles.headerCard}>
-          <Text style={styles.guia}>{paquete.numeroGuia}</Text>
-          <View style={[styles.badge, { backgroundColor: `${estadoConfig.color}20` }]}>
-            <Text style={[styles.badgeText, { color: estadoConfig.color }]}>
-              {estadoConfig.label}
-            </Text>
+          <View style={styles.headerRow}>
+            <Van size={24} color={theme.colors.primary} />
+            <Text style={styles.guia}>{paquete.numeroGuia}</Text>
           </View>
+          <Badge label={estadoConfig.label} variant={estadoConfig.variant} />
           {paquete.evidencias?.fechaEntrega && (
             <Text style={styles.fechaEntrega}>
               ✅ Entregado: {formatearFecha(paquete.evidencias.fechaEntrega)}
@@ -297,10 +305,10 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
           <Text style={styles.resumen}>{paquete.resumen}</Text>
         </Card>
 
-        {/* Información del cliente */}
+        {/* Datos de la Boleta */}
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>📋 Cliente</Text>
-          <InfoRow label="Nombre" value={paquete.destinatario} />
+          <Text style={styles.sectionTitle}>📋 Datos de la Boleta</Text>
+          <InfoRow label="Cliente" value={paquete.destinatario} />
           <InfoRow label="Teléfono" value={paquete.telefono} />
           <InfoRow label="Dirección" value={paquete.direccion} />
           {paquete.direccionCorregida && (
@@ -310,6 +318,13 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
             </View>
           )}
           <InfoRow label="Referencia" value={paquete.referencia} />
+          {boletaCompleta && (
+            <>
+              <InfoRow label="Número de Pedido" value={boletaCompleta.numeroPedido || paquete.numeroPedido || '-'} />
+              <InfoRow label="Campaña" value={boletaCompleta.campana || boletaCompleta.campania || '-'} />
+              <InfoRow label="Total Cajas" value={String(boletaCompleta.totalCajas || paquete.piezas || 0)} />
+            </>
+          )}
 
           <View style={styles.clienteActions}>
             <TouchableOpacity style={styles.callButton} onPress={handleLlamar}>
@@ -346,19 +361,38 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
           </View>
         </Card>
 
-        {/* Evidencia de entrega */}
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>✅ Evidencia de Entrega</Text>
+        {/* AFP's y Valijas */}
+        {boletaCompleta && boletaCompleta.productos && boletaCompleta.productos.length > 0 && (
+          <Card style={styles.section}>
+            <Text style={styles.sectionTitle}>📦 AFP's / Valijas / Premios</Text>
+            <View style={styles.afpInfoContainer}>
+              <Text style={styles.afpInfoText}>
+                ⚠️ Este pedido incluye {boletaCompleta.productos.length} {boletaCompleta.productos.length === 1 ? 'artículo' : 'artículos'} fuera de caja
+              </Text>
+            </View>
+            <View style={styles.productosTabla}>
+              <View style={styles.productosTablaHeader}>
+                <Text style={[styles.productosTablaHeaderCell, { flex: 1 }]}>UNID</Text>
+                <Text style={[styles.productosTablaHeaderCell, { flex: 1 }]}>IND</Text>
+                <Text style={[styles.productosTablaHeaderCell, { flex: 3 }]}>DESCRIPCIÓN</Text>
+              </View>
+              {boletaCompleta.productos.map((producto, index) => (
+                <View key={index} style={styles.productosTablaRow}>
+                  <Text style={[styles.productosTablaCell, { flex: 1 }]}>{producto.unidades || producto.cantidad || '-'}</Text>
+                  <Text style={[styles.productosTablaCell, { flex: 1 }]}>{producto.indice || producto.indicador || '-'}</Text>
+                  <Text style={[styles.productosTablaCell, { flex: 3 }]}>{producto.descripcion || '-'}</Text>
+                </View>
+              ))}
+            </View>
+          </Card>
+        )}
 
-          <Input
-            label="Nombre de quien recibe"
-            value={nombreRecibe}
-            onChangeText={setNombreRecibe}
-            placeholder="Ej. Ana López"
-          />
+        {/* Checklist: Quien recibió */}
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>✅ Checklist de Entrega</Text>
 
           <View style={styles.recibidoPorSection}>
-            <Text style={styles.recibidoPorTitulo}>Recibido por:</Text>
+            <Text style={styles.recibidoPorTitulo}>¿Quién recibió el pedido?</Text>
             <View style={styles.recibidoPorOpciones}>
               {Object.entries(RECIBIDO_POR).map(([key, label]) => (
                 <TouchableOpacity
@@ -380,7 +414,38 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
           </View>
 
           <Input
-            label="Notas / observaciones"
+            label="Nombre de quien recibe *"
+            value={nombreRecibe}
+            onChangeText={setNombreRecibe}
+            placeholder="Ej. Ana López"
+          />
+        </Card>
+
+        {/* Foto de evidencia */}
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>📷 Foto de Evidencia de Entrega</Text>
+          <View style={styles.photoSection}>
+            <Text style={styles.photoLabel}>Fotos capturadas: {fotos.length}</Text>
+            <TouchableOpacity style={styles.photoButton} onPress={handleTomarFoto}>
+              <View style={styles.photoButtonContent}>
+                <AnimatedIcon
+                  source={{ uri: ANIMATED_ICONS.camera }}
+                  size={40}
+                  autoPlay={true}
+                  loop={true}
+                />
+                <Text style={styles.photoButtonText}>Tomar Foto de Entrega</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </Card>
+
+        {/* Observaciones */}
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>📝 Observaciones</Text>
+
+          <Input
+            label="Notas de entrega"
             value={notasEntrega}
             onChangeText={setNotasEntrega}
             placeholder="Detalles relevantes de la entrega"
@@ -398,54 +463,37 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
             numberOfLines={2}
             style={{ height: 60 }}
           />
-
-          <View style={styles.photoSection}>
-            <Text style={styles.photoLabel}>Fotos ({fotos.length})</Text>
-            <TouchableOpacity style={styles.photoButton} onPress={handleTomarFoto}>
-              <View style={styles.photoButtonContent}>
-                <AnimatedIcon
-                  source={{ uri: ANIMATED_ICONS.camera }}
-                  size={40}
-                  autoPlay={true}
-                  loop={true}
-                />
-                <Text style={styles.photoButtonText}>Tomar Foto</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Firma digital */}
-          <View style={styles.signatureSection}>
-            <SignaturePad value={firma} onChange={setFirma} />
-          </View>
         </Card>
 
-        {/* Acciones */}
-        <View style={styles.actions}>
-          <Button
-            title="En Ruta"
-            onPress={() => handleCambiarEstado('EN_RUTA')}
-            variant="primary"
-            disabled={paquete.estado === 'EN_RUTA' || loading}
-            style={styles.actionButton}
-          />
+        {/* Botones de Estado del Pedido */}
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>🔄 Estado del Pedido</Text>
+          <View style={styles.actions}>
+            <Button
+              title="🚚 En Ruta"
+              onPress={() => handleCambiarEstado('EN_RUTA')}
+              variant="primary"
+              disabled={paquete.estado === 'EN_RUTA' || loading}
+              style={styles.actionButton}
+            />
 
-          <Button
-            title="✅ Entregado"
-            onPress={() => handleCambiarEstado('ENTREGADO')}
-            variant="success"
-            loading={loading}
-            style={styles.actionButton}
-          />
+            <Button
+              title="✅ Entregado"
+              onPress={() => handleCambiarEstado('ENTREGADO')}
+              variant="success"
+              loading={loading}
+              style={styles.actionButton}
+            />
 
-          <Button
-            title="❌ No Entregado"
-            onPress={() => handleCambiarEstado('NO_ENTREGADO')}
-            variant="danger"
-            loading={loading}
-            style={styles.actionButton}
-          />
-        </View>
+            <Button
+              title="❌ No Entregado"
+              onPress={() => handleCambiarEstado('NO_ENTREGADO')}
+              variant="danger"
+              loading={loading}
+              style={styles.actionButton}
+            />
+          </View>
+        </Card>
       </ScrollView>
 
       {/* Modal de búsqueda/corrección de dirección */}
@@ -460,9 +508,12 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
 }
 
 // ============================================================================
-// VISTA DE BOLETA DE DESPACHO (Modo Lectura)
+// VISTA DE BOLETA DE DESPACHO (Modo Lectura) - DESHABILITADA POR AHORA
 // ============================================================================
+// Esta vista completa de boleta está comentada para simplificar la experiencia
+// del repartidor. Por ahora solo usamos la vista simplificada de captura.
 
+/*
 function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatearFechaSola, formatearHora }) {
   if (loading || !boleta) {
     return (
@@ -476,7 +527,6 @@ function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatear
 
   return (
     <>
-      {/* Encabezado */}
       <Card style={styles.boletaHeader}>
         <View style={styles.boletaHeaderRow}>
           <View style={styles.boletaInfoGroup}>
@@ -498,13 +548,11 @@ function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatear
         </View>
       </Card>
 
-      {/* Título Boleta de Despacho */}
       <Card style={styles.boletaTitulo}>
         <Text style={styles.boletaTituloText}>BOLETA DE DESPACHO</Text>
         <Text style={styles.boletaNumeroPedido}>[{boleta.numeroPedido || paquete.numeroPedido || '-'}]</Text>
       </Card>
 
-      {/* Información del Pedido */}
       <Card style={styles.section}>
         <View style={styles.boletaRow}>
           <View style={styles.boletaCampo}>
@@ -540,7 +588,6 @@ function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatear
         </View>
       </Card>
 
-      {/* Estado */}
       <Card style={styles.section}>
         <Text style={styles.boletaLabel}>Estado:</Text>
         <View style={[styles.badge, { backgroundColor: estadoConfig.bgColor, marginTop: 8 }]}>
@@ -550,7 +597,6 @@ function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatear
         </View>
       </Card>
 
-      {/* Recibido por */}
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Recibido por:</Text>
         <View style={styles.recibidoPorOpciones}>
@@ -582,12 +628,11 @@ function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatear
         )}
       </Card>
 
-      {/* Firma */}
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Firma del receptor</Text>
         {boleta.firmaUrl ? (
           <View style={styles.firmaContainer}>
-            <Image
+            <AuthenticatedImage
               source={{ uri: boleta.firmaUrl }}
               style={styles.firmaImage}
               resizeMode="contain"
@@ -601,7 +646,6 @@ function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatear
         )}
       </Card>
 
-      {/* Botón para ver foto (deshabilitado) */}
       <Card style={styles.section}>
         <Text style={styles.sectionTitle}>Evidencia Fotográfica</Text>
         <TouchableOpacity
@@ -613,7 +657,6 @@ function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatear
         </TouchableOpacity>
       </Card>
 
-      {/* Productos AFP */}
       {boleta.productos && boleta.productos.length > 0 && (
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>
@@ -636,7 +679,6 @@ function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatear
         </Card>
       )}
 
-      {/* Info del Repartidor */}
       {boleta.nombreRepartidor && (
         <Card style={styles.section}>
           <Text style={styles.boletaLabel}>Repartidor asignado:</Text>
@@ -649,6 +691,7 @@ function VistaBoletaDespacho({ paquete, boleta, loading, estadoConfig, formatear
     </>
   );
 }
+*/
 
 function InfoRow({ label, value }) {
   return (
@@ -662,177 +705,185 @@ function InfoRow({ label, value }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background,
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxxl,
   },
   headerCard: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
   },
   guia: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  badgeText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
   },
   fechaEntrega: {
-    fontSize: 12,
-    color: '#10b981',
-    fontWeight: '600',
-    marginTop: 8,
-    marginBottom: 4,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.success,
+    fontWeight: theme.typography.weights.semibold,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
   },
   fechaNoEntrega: {
-    fontSize: 12,
-    color: '#ef4444',
-    fontWeight: '600',
-    marginTop: 8,
-    marginBottom: 4,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.error,
+    fontWeight: theme.typography.weights.semibold,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
   },
   resumen: {
-    fontSize: 14,
-    color: '#64748b',
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.sm,
   },
   section: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 12,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.md,
   },
   infoRow: {
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   infoLabel: {
-    fontSize: 12,
-    color: '#64748b',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textMuted,
     marginBottom: 2,
   },
   infoValue: {
-    fontSize: 14,
-    color: '#0f172a',
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textPrimary,
   },
   direccionCorregidaInfo: {
-    backgroundColor: '#d1fae5',
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    marginBottom: 8,
+    backgroundColor: theme.colors.surfaceElevated,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
     borderLeftWidth: 4,
-    borderLeftColor: '#10b981',
+    borderLeftColor: theme.colors.success,
   },
   direccionCorregidaLabel: {
-    fontSize: 12,
-    color: '#065f46',
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.success,
+    fontWeight: theme.typography.weights.semibold,
+    marginBottom: theme.spacing.xs,
   },
   direccionCorregidaValue: {
-    fontSize: 14,
-    color: '#047857',
-    fontWeight: '500',
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textPrimary,
+    fontWeight: theme.typography.weights.medium,
   },
   clienteActions: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 12,
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.md,
   },
   callButton: {
     flex: 1,
-    backgroundColor: '#10b981',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: theme.colors.success,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
   },
   addressButton: {
     flex: 1,
-    backgroundColor: '#f59e0b',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: theme.colors.warning,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
   },
   addressButtonCorrected: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: theme.colors.info,
   },
   callButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   callButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: theme.colors.textPrimary,
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
   },
   addressButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   addressButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: theme.colors.textPrimary,
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
   },
   photoButton: {
-    backgroundColor: '#3b82f6',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: theme.colors.info,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
   photoButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: theme.spacing.md,
   },
   photoButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: theme.colors.textPrimary,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold,
   },
   photoSection: {
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
   photoLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 8,
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.sm,
   },
   signatureSection: {
     marginTop: 16,
   },
   recibidoPorSection: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   recibidoPorTitulo: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 12,
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+  },
+  afpInfoContainer: {
+    backgroundColor: theme.colors.surfaceElevated,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: theme.spacing.md,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.info,
+  },
+  afpInfoText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.info,
+    fontWeight: theme.typography.weights.semibold,
   },
   actions: {
-    gap: 12,
-    marginTop: 8,
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.sm,
   },
   actionButton: {
     minHeight: 52,
@@ -925,9 +976,9 @@ const styles = StyleSheet.create({
   recibidoPorOpciones: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 8,
-    marginBottom: 12,
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
   recibidoPorOpcion: {
     flexDirection: 'row',
@@ -938,25 +989,25 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: '#cbd5e1',
-    borderRadius: 4,
-    marginRight: 8,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.xs,
+    marginRight: theme.spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.colors.surface,
   },
   checkboxChecked: {
-    backgroundColor: '#10b981',
-    borderColor: '#10b981',
+    backgroundColor: theme.colors.success,
+    borderColor: theme.colors.success,
   },
   checkboxCheck: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.weights.bold,
   },
   recibidoPorLabel: {
-    fontSize: 14,
-    color: '#334155',
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.textPrimary,
   },
   receptorInfo: {
     marginTop: 8,
@@ -1022,34 +1073,34 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   productosTabla: {
-    marginTop: 12,
+    marginTop: theme.spacing.md,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
+    borderColor: theme.colors.border,
+    borderRadius: theme.borderRadius.sm,
     overflow: 'hidden',
   },
   productosTablaHeader: {
     flexDirection: 'row',
-    backgroundColor: '#1e293b',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
   },
   productosTablaHeaderCell: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold,
     textAlign: 'center',
   },
   productosTablaRow: {
     flexDirection: 'row',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: theme.colors.border,
   },
   productosTablaCell: {
-    fontSize: 12,
-    color: '#334155',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textPrimary,
     textAlign: 'center',
   },
 });

@@ -7,6 +7,21 @@
  */
 
 const OSRM_BASE_URL = 'https://router.project-osrm.org';
+const routeCache = new Map();
+const ROUTE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function roundCoord(value) {
+  return Number(value).toFixed(4);
+}
+
+function buildRouteCacheKey(origin, destination) {
+  return [
+    roundCoord(origin.lat),
+    roundCoord(origin.lng),
+    roundCoord(destination.lat),
+    roundCoord(destination.lng),
+  ].join('|');
+}
 
 /**
  * Calcula la ruta entre dos puntos
@@ -16,6 +31,13 @@ const OSRM_BASE_URL = 'https://router.project-osrm.org';
  */
 export async function calculateRoute(origin, destination) {
   try {
+    const cacheKey = buildRouteCacheKey(origin, destination);
+    const cachedRoute = routeCache.get(cacheKey);
+
+    if (cachedRoute && Date.now() - cachedRoute.timestamp < ROUTE_CACHE_TTL_MS) {
+      return cachedRoute.data;
+    }
+
     // OSRM espera formato: longitude,latitude
     const coords = `${origin.lng},${origin.lat};${destination.lng},${destination.lat}`;
 
@@ -36,7 +58,7 @@ export async function calculateRoute(origin, destination) {
 
     const route = data.routes[0];
 
-    return {
+    const normalizedRoute = {
       distance: route.distance, // metros
       duration: route.duration, // segundos
       geometry: route.geometry.coordinates, // Array de [lng, lat]
@@ -44,6 +66,13 @@ export async function calculateRoute(origin, destination) {
       bounds: calculateBounds(route.geometry.coordinates),
       raw: route
     };
+
+    routeCache.set(cacheKey, {
+      data: normalizedRoute,
+      timestamp: Date.now(),
+    });
+
+    return normalizedRoute;
 
   } catch (error) {
     console.error('Error calculando ruta:', error);

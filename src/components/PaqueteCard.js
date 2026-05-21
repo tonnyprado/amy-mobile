@@ -1,141 +1,197 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Van } from 'lucide-react-native';
+import Badge from './ui/Badge';
+import theme from '../theme';
 
 const ESTADOS_CONFIG = {
-  PENDIENTE: { label: 'Pendiente', color: '#64748b', bgColor: '#f1f5f9' },
-  EN_RUTA: { label: 'En ruta', color: '#2563eb', bgColor: '#dbeafe' },
-  ENTREGADO: { label: 'Entregado', color: '#10b981', bgColor: '#d1fae5' },
-  NO_ENTREGADO: { label: 'No entregado', color: '#ef4444', bgColor: '#fee2e2' }
+  PENDIENTE: { label: 'Pendiente', variant: 'neutral', icon: 'time-outline', color: theme.colors.textMuted },
+  EN_RUTA: { label: 'En ruta', variant: 'info', icon: 'navigate', color: theme.colors.info },
+  ENTREGADO: { label: 'Entregado', variant: 'success', icon: 'checkmark-circle', color: theme.colors.success },
+  NO_ENTREGADO: { label: 'No entregado', variant: 'error', icon: 'close-circle', color: theme.colors.error },
+};
+
+const SUBTIPOS_AVISO_LABELS = {
+  A: 'Aviso',
+  DI: 'Datos Incorrectos',
+  AR: 'Alto Riesgo',
+  CD: 'Cambio Domicilio',
+  R: 'Rechazo'
 };
 
 /**
- * Tarjeta de paquete individual
+ * Tarjeta de paquete individual con diseño moderno
  */
 export default function PaqueteCard({ paquete, isSelected, onPress }) {
   const estadoConfig = ESTADOS_CONFIG[paquete.estado] || ESTADOS_CONFIG.PENDIENTE;
+  const esAviso = paquete.tipoPedido === 'AVISO';
+  const totalIntentos = (paquete.numeroIntento || 1) + (paquete.intentosAviso || 0);
 
   return (
     <TouchableOpacity
-      style={[styles.card, isSelected && styles.cardSelected]}
+      style={[
+        styles.card,
+        isSelected && styles.cardSelected,
+        esAviso && styles.cardAviso,
+      ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
+      {/* Header con icono y guía */}
       <View style={styles.header}>
-        <Text style={styles.guia}>{paquete.numeroGuia}</Text>
-        <View style={[styles.badge, { backgroundColor: estadoConfig.bgColor }]}>
-          <Text style={[styles.badgeText, { color: estadoConfig.color }]}>
-            {estadoConfig.label}
-          </Text>
+        <View style={[styles.iconCircle, { backgroundColor: `${theme.colors.primary}15` }]}>
+          <Van size={22} color={theme.colors.primary} strokeWidth={2.5} />
+        </View>
+        <View style={styles.headerInfo}>
+          <Text style={styles.guia}>{paquete.numeroGuia}</Text>
+          <Text style={styles.destinatario} numberOfLines={1}>{paquete.destinatario}</Text>
+        </View>
+        <View style={styles.badgesContainer}>
+          {esAviso && (
+            <Badge label="AVISO" variant="warning" size="sm" />
+          )}
+          <Badge label={estadoConfig.label} variant={estadoConfig.variant} size="sm" />
         </View>
       </View>
 
-      <View style={styles.body}>
-        <InfoRow label="Destinatario" value={paquete.destinatario} />
-        <InfoRow label="Dirección" value={paquete.direccion} numberOfLines={2} />
-        <InfoRow label="Ventana" value={paquete.ventanaEntrega} />
-        <InfoRow label="Piezas" value={String(paquete.piezas)} />
+      {/* Aviso info si aplica */}
+      {esAviso && paquete.subtipoAviso && (
+        <View style={styles.avisoInfoContainer}>
+          <Ionicons name="warning" size={16} color={theme.colors.warning} />
+          <Text style={styles.avisoInfoLabel}>
+            {paquete.subtipoAviso}: {SUBTIPOS_AVISO_LABELS[paquete.subtipoAviso] || paquete.subtipoAviso}
+          </Text>
+        </View>
+      )}
+
+      {/* Dirección */}
+      <View style={styles.infoRow}>
+        <Ionicons name="location-outline" size={18} color={theme.colors.textMuted} />
+        <Text style={styles.direccion} numberOfLines={2}>
+          {paquete.direccion}
+        </Text>
       </View>
 
+      {/* Footer con detalles */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          {paquete.evidencias?.fotos?.length || 0} foto(s)
-        </Text>
-        <Text style={styles.footerText}>
-          {formatDate(paquete.evidencias?.ultimaActualizacion)}
-        </Text>
+        <View style={styles.footerItem}>
+          <Ionicons name="cube-outline" size={16} color={theme.colors.textMuted} />
+          <Text style={styles.footerText}>{paquete.piezas} pza(s)</Text>
+        </View>
+        <View style={styles.footerItem}>
+          <Ionicons name="time-outline" size={16} color={theme.colors.textMuted} />
+          <Text style={styles.footerText}>{paquete.ventanaEntrega}</Text>
+        </View>
+        {esAviso && (
+          <View style={styles.footerItem}>
+            <Ionicons name="repeat-outline" size={16} color={theme.colors.warning} />
+            <Text style={[styles.footerText, { color: theme.colors.warning }]}>
+              {totalIntentos} intento(s)
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
 }
 
-function InfoRow({ label, value, numberOfLines = 1 }) {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue} numberOfLines={numberOfLines}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function formatDate(value) {
-  if (!value) return 'Sin movimientos';
-  return new Intl.DateTimeFormat('es-MX', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(new Date(value));
-}
-
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    borderWidth: 1,
+    borderColor: theme.colors.borderLight,
+    ...theme.shadows.md,
   },
   cardSelected: {
-    borderColor: '#2563eb',
-    shadowOpacity: 0.2,
-    elevation: 4,
+    borderColor: theme.colors.primary,
+    borderWidth: 2,
+    ...theme.shadows.purple,
+  },
+  cardAviso: {
+    borderColor: theme.colors.warning,
+    borderWidth: 2,
+    backgroundColor: theme.colors.surfaceOrange,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
+    gap: theme.spacing.md,
+  },
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.borderRadius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerInfo: {
+    flex: 1,
   },
   guia: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.extrabold,
+    color: theme.colors.textPrimary,
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  destinatario: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold,
+    color: theme.colors.textSecondary,
   },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
+  badgesContainer: {
+    gap: theme.spacing.xs,
+    alignItems: 'flex-end',
   },
-  body: {
-    gap: 8,
+  avisoInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.surfaceOrange,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  avisoInfoLabel: {
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold,
+    color: theme.colors.warning,
+    flex: 1,
   },
   infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
-  infoLabel: {
-    fontSize: 13,
-    color: '#64748b',
-    fontWeight: '500',
-    flex: 0.4,
-  },
-  infoValue: {
-    fontSize: 13,
-    color: '#0f172a',
-    flex: 0.6,
-    textAlign: 'right',
+  direccion: {
+    flex: 1,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.textPrimary,
+    fontWeight: theme.typography.weights.medium,
+    lineHeight: theme.typography.sizes.sm * 1.4,
   },
   footer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    paddingTop: 12,
+    gap: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: theme.colors.borderLight,
+  },
+  footerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
   },
   footerText: {
-    fontSize: 11,
-    color: '#94a3b8',
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.textMuted,
+    fontWeight: theme.typography.weights.semibold,
   },
 });
