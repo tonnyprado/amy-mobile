@@ -164,15 +164,8 @@ function AppNavigator({ navigationRef }) {
             name="PaqueteDetalle"
             component={PaqueteDetalleScreen}
             options={{
-              headerShown: true,
-              headerTitle: 'Detalle del Paquete',
-              headerStyle: {
-                backgroundColor: '#FF7849',
-              },
-              headerTintColor: '#fff',
-              headerTitleStyle: {
-                fontWeight: '700',
-              },
+              headerShown: false,
+              animation: 'slide_from_right',
             }}
           />
           <Stack.Screen

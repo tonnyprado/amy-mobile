@@ -38,7 +38,7 @@ export default function OrdersScreen({ theme, pedidos = [], onPedidoPress }) {
 
   return (
     <SectionShell bg={theme.canvas} label="02 Pedidos" theme={theme} padded={false}>
-      <View style={{ paddingTop: 56 }}>
+      <View style={{ flex: 1, paddingTop: 56 }}>
         <SectionHeader
           theme={theme}
           kicker=""
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 30,
+    paddingBottom: 120,
     gap: 10,
   },
   orderCard: {

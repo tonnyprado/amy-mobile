@@ -4,6 +4,16 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert, Linking, Platform } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withDelay,
+  runOnJS
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 import SectionShell from '../../components/repartidor/SectionShell';
 import Pill from '../../components/repartidor/Pill';
 import Icon from '../../components/repartidor/Icon';
@@ -13,9 +23,73 @@ import { customMapStyle, darkMapStyle } from '../../theme/mapStyles';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-export default function MapScreen({ theme, pedidos = [], ubicacionActual, userName = 'Usuario' }) {
+export default function MapScreen({ theme, pedidos = [], ubicacionActual, userName = 'Usuario', onPedidoPress, onComenzarRuta }) {
   const mapRef = useRef(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [iniciandoRuta, setIniciandoRuta] = useState(false);
+  const [mostrarPedidoActivo, setMostrarPedidoActivo] = useState(false);
+
+  // Animaciones
+  const cardScale = useSharedValue(1);
+  const cardTranslateY = useSharedValue(0);
+  const cardOpacity = useSharedValue(1);
+
+  // Verificar si la ruta ya comenzó (hay pedidos EN_RUTA)
+  const rutaIniciada = pedidos.some(p => p.estado === 'EN_RUTA');
+  const hayPedidosPendientes = pedidos.some(p => p.estado === 'PENDIENTE');
+
+  // Efecto de entrada cuando la ruta se inicia
+  useEffect(() => {
+    if (rutaIniciada && mostrarPedidoActivo) {
+      // Animación de entrada del pedido activo
+      cardTranslateY.value = 100;
+      cardOpacity.value = 0;
+      cardScale.value = 0.8;
+
+      cardTranslateY.value = withSpring(0, { damping: 15, stiffness: 100 });
+      cardOpacity.value = withSpring(1);
+      cardScale.value = withSpring(1, { damping: 12, stiffness: 100 });
+    }
+  }, [rutaIniciada, mostrarPedidoActivo]);
+
+  // Estilo animado para la tarjeta
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: cardTranslateY.value },
+      { scale: cardScale.value }
+    ],
+    opacity: cardOpacity.value,
+  }));
+
+  // Función para reproducir sonido y haptics
+  const playStartSound = async () => {
+    try {
+      // Haptic feedback fuerte
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Intentar reproducir sonido si existe
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          require('../../../assets/sounds/start-route.mp3')
+        );
+        await sound.playAsync();
+        // Limpiar después de reproducir
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.didJustFinish) {
+            sound.unloadAsync();
+          }
+        });
+      } catch (soundError) {
+        // Si no hay sonido, solo usar haptics adicionales
+        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setTimeout(async () => {
+          await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }, 100);
+      }
+    } catch (error) {
+      console.log('Error en feedback:', error);
+    }
+  };
   const [region, setRegion] = useState({
     latitude: ubicacionActual?.lat || 19.4326,
     longitude: ubicacionActual?.lng || -99.1332,
@@ -378,8 +452,18 @@ export default function MapScreen({ theme, pedidos = [], ubicacionActual, userNa
 
         {/* Next stop card */}
         {currentStop && (
-          <View style={[styles.nextStopCard, { backgroundColor: theme.ink }]}>
-            <View style={styles.nextStopHeader}>
+          <Animated.View style={animatedCardStyle}>
+            <TouchableOpacity
+              style={[styles.nextStopCard, { backgroundColor: theme.ink }]}
+              activeOpacity={0.9}
+              onPress={() => {
+                const pedido = pedidos.find(p => p.id === currentStop.id);
+                if (pedido && onPedidoPress) {
+                  onPedidoPress(pedido);
+                }
+              }}
+            >
+              <View style={styles.nextStopHeader}>
               <Pill bg={theme.accent} color={theme.ink}>
                 <>
                   <Icon name="map-pin" size={11} color={theme.ink} />
@@ -410,31 +494,68 @@ export default function MapScreen({ theme, pedidos = [], ubicacionActual, userNa
                   {ruta?.distance || '-'}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={[styles.nextStopButton, { backgroundColor: theme.accent }]}
-                onPress={() => {
-                  if (!currentStop.latitude || !currentStop.longitude) {
-                    Alert.alert('Error', 'No hay coordenadas para esta parada');
-                    return;
-                  }
+              {!rutaIniciada && hayPedidosPendientes ? (
+                <TouchableOpacity
+                  style={[styles.nextStopButton, styles.startRouteButton, { backgroundColor: theme.accent, opacity: iniciandoRuta ? 0.7 : 1 }]}
+                  disabled={iniciandoRuta}
+                  onPress={async () => {
+                    if (!onComenzarRuta) return;
+                    setIniciandoRuta(true);
 
-                  // Abrir navegación externa (Google Maps o Apple Maps)
-                  const url = Platform.OS === 'ios'
-                    ? `maps://app?daddr=${currentStop.latitude},${currentStop.longitude}`
-                    : `google.navigation:q=${currentStop.latitude},${currentStop.longitude}`;
+                    // Reproducir sonido y haptics inmediatamente
+                    await playStartSound();
 
-                  Linking.openURL(url).catch(err => {
-                    console.error('Error abriendo navegación:', err);
-                    // Fallback a URL web
-                    Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${currentStop.latitude},${currentStop.longitude}`);
-                  });
-                }}
-              >
-                <Text style={[styles.nextStopButtonText, { color: theme.ink }]}>Navegar</Text>
-                <Icon name="navigation" size={13} color={theme.ink} strokeWidth={2.4} />
-              </TouchableOpacity>
+                    // Animación de salida de la tarjeta actual
+                    cardScale.value = withSpring(0.95, { damping: 20 });
+                    cardOpacity.value = withSpring(0.5);
+
+                    try {
+                      await onComenzarRuta();
+                      // Activar la animación de entrada del nuevo pedido
+                      setMostrarPedidoActivo(true);
+                    } catch (error) {
+                      // Restaurar si hay error
+                      cardScale.value = withSpring(1);
+                      cardOpacity.value = withSpring(1);
+                      Alert.alert('Error', 'No se pudo iniciar la ruta');
+                    } finally {
+                      setIniciandoRuta(false);
+                    }
+                  }}
+                >
+                  <Icon name="play" size={15} color={theme.ink} strokeWidth={2.4} />
+                  <Text style={[styles.nextStopButtonText, { color: theme.ink }]}>
+                    {iniciandoRuta ? 'Iniciando...' : 'Comenzar Ruta'}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.nextStopButton, { backgroundColor: theme.accent }]}
+                  onPress={() => {
+                    if (!currentStop.latitude || !currentStop.longitude) {
+                      Alert.alert('Error', 'No hay coordenadas para esta parada');
+                      return;
+                    }
+
+                    // Abrir navegación externa (Google Maps o Apple Maps)
+                    const url = Platform.OS === 'ios'
+                      ? `maps://app?daddr=${currentStop.latitude},${currentStop.longitude}`
+                      : `google.navigation:q=${currentStop.latitude},${currentStop.longitude}`;
+
+                    Linking.openURL(url).catch(err => {
+                      console.error('Error abriendo navegación:', err);
+                      // Fallback a URL web
+                      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${currentStop.latitude},${currentStop.longitude}`);
+                    });
+                  }}
+                >
+                  <Text style={[styles.nextStopButtonText, { color: theme.ink }]}>Navegar</Text>
+                  <Icon name="navigation" size={13} color={theme.ink} strokeWidth={2.4} />
+                </TouchableOpacity>
+              )}
             </View>
-          </View>
+            </TouchableOpacity>
+          </Animated.View>
         )}
       </View>
     </SectionShell>
@@ -679,6 +800,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.2,
     fontFamily: FONTS.bodyBold,
+  },
+  startRouteButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minWidth: 140,
+    justifyContent: 'center',
   },
   // Estilos de marcadores personalizados
   currentLocationMarker: {

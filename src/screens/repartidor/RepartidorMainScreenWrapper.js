@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGeolocation } from '../../hooks/useGeolocation';
 import { useChatInbox } from '../../hooks/useChatInbox';
-import { obtenerPedidosHoy, convertirPedidoBackend } from '../../services/repartidorApi';
+import { obtenerPedidosHoy, convertirPedidoBackend, comenzarRuta } from '../../services/repartidorApi';
 import RepartidorMainScreen from './RepartidorMainScreen';
 import LoadingScreen from '../../components/LoadingScreen';
 
@@ -69,6 +69,20 @@ export default function RepartidorMainScreenWrapper({ navigation }) {
     }
   };
 
+  const handleComenzarRuta = async () => {
+    const repartidorId = user?.repartidor?.idRepartidor;
+    if (!repartidorId) return;
+
+    try {
+      await comenzarRuta(repartidorId);
+      // Recargar pedidos para reflejar el cambio de estado
+      await cargarPedidos();
+    } catch (error) {
+      console.error('Error al comenzar ruta:', error);
+      throw error; // Re-throw para que el componente pueda mostrar el error
+    }
+  };
+
   // Calcular total de mensajes no leídos
   const unreadCount = conversations.reduce((total, conv) => {
     return total + (conv.unreadCount || 0);
@@ -116,6 +130,7 @@ export default function RepartidorMainScreenWrapper({ navigation }) {
       tracking={tracking}
       unreadCount={unreadCount}
       toastNotification={toastNotification}
+      onComenzarRuta={handleComenzarRuta}
       onToastPress={() => {
         if (toastNotification?.conversationId) {
           navigation.navigate('ChatConversation', {

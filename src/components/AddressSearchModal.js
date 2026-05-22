@@ -12,15 +12,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { X, Search, MapPin, Check, Package, Navigation } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { geocodificarYActualizarPedido } from '../services/geocodingApi';
+import { getTheme, FONTS } from '../theme/repartidorTheme';
 
-/**
- * Modal para buscar y geocodificar direcciones manualmente
- * Permite al repartidor corregir o confirmar direcciones de pedidos sin coordenadas
- */
+const theme = getTheme('violet');
+
 export default function AddressSearchModal({ visible, onClose, pedido, onSuccess }) {
-  // Estados para campos individuales de dirección
   const [calle, setCalle] = useState('');
   const [numero, setNumero] = useState('');
   const [colonia, setColonia] = useState('');
@@ -32,15 +31,15 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
   const [resultado, setResultado] = useState(null);
 
   const handleBuscar = async () => {
-    // Validar que al menos haya un campo con información
     const tieneDatos = calle.trim() || numero.trim() || colonia.trim() ||
                        codigoPostal.trim() || municipio.trim() || ciudad.trim();
 
     if (!tieneDatos) {
-      Alert.alert('Error', 'Ingresa al menos un campo de la dirección para buscar');
+      Alert.alert('Error', 'Ingresa al menos un campo de la dirección');
       return;
     }
 
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoading(true);
     setResultado(null);
 
@@ -61,6 +60,7 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
       setResultado(result);
 
       if (result.exitoso) {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert(
           'Dirección encontrada',
           `${result.direccionFormateada}\n\nConfianza: ${Math.round((result.confianza || 0) * 100)}%`,
@@ -69,27 +69,23 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
               text: 'Usar esta dirección',
               onPress: () => {
                 onSuccess && onSuccess(result);
-                onClose();
+                handleCerrar();
               }
             },
-            {
-              text: 'Buscar otra',
-              style: 'cancel'
-            }
+            { text: 'Buscar otra', style: 'cancel' }
           ]
         );
       } else {
         Alert.alert('No encontrada', result.mensajeError || 'No se pudo encontrar la dirección');
       }
     } catch (error) {
-      Alert.alert('Error', 'No se pudo buscar la dirección. Intenta de nuevo.');
+      Alert.alert('Error', 'No se pudo buscar la dirección');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCerrar = () => {
-    // Limpiar campos
     setCalle('');
     setNumero('');
     setColonia('');
@@ -117,9 +113,12 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Buscar Dirección</Text>
+            <View style={styles.headerIcon}>
+              <MapPin size={20} color={theme.accent} strokeWidth={2.5} />
+            </View>
+            <Text style={styles.title}>Corregir Dirección</Text>
             <TouchableOpacity onPress={handleCerrar} style={styles.closeButton}>
-              <Ionicons name="close" size={28} color="#64748b" />
+              <X size={22} color={theme.muted} strokeWidth={2} />
             </TouchableOpacity>
           </View>
 
@@ -128,37 +127,38 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
             style={styles.content}
             contentContainerStyle={styles.contentContainer}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={true}
+            showsVerticalScrollIndicator={false}
           >
             {/* Info del pedido */}
-            <View style={styles.pedidoInfo}>
-              <Text style={styles.pedidoLabel}>Pedido:</Text>
-              <Text style={styles.pedidoValue}>{pedido?.numeroGuia}</Text>
-              <Text style={styles.pedidoDestinatario}>{pedido?.destinatario}</Text>
+            <View style={styles.pedidoCard}>
+              <Package size={16} color={theme.accent} />
+              <View style={styles.pedidoInfo}>
+                <Text style={styles.pedidoCode}>{pedido?.numeroGuia}</Text>
+                <Text style={styles.pedidoName}>{pedido?.destinatario}</Text>
+              </View>
             </View>
 
             {/* Dirección original */}
             <View style={styles.direccionOriginal}>
-              <Text style={styles.direccionOriginalLabel}>Dirección original:</Text>
-              <Text style={styles.direccionOriginalText}>{pedido?.direccion}</Text>
+              <Text style={styles.direccionLabel}>Dirección registrada</Text>
+              <Text style={styles.direccionText}>{pedido?.direccion}</Text>
             </View>
 
-            {/* Dirección corregida anterior (si existe) */}
+            {/* Dirección corregida anterior */}
             {pedido?.direccionCorregida && (
-              <View style={styles.direccionCorregidaAnterior}>
-                <Text style={styles.direccionCorregidaLabel}>✅ Última corrección guardada:</Text>
-                <Text style={styles.direccionCorregidaText}>{pedido.direccionCorregida}</Text>
+              <View style={styles.direccionCorregida}>
+                <Check size={14} color={theme.successFg} />
+                <View style={styles.direccionCorregidaContent}>
+                  <Text style={styles.direccionCorregidaLabel}>Última corrección</Text>
+                  <Text style={styles.direccionCorregidaText}>{pedido.direccionCorregida}</Text>
+                </View>
               </View>
             )}
 
-            {/* Campos individuales de dirección */}
-            <View style={styles.searchSection}>
-              <Text style={styles.label}>
-                {pedido?.direccionCorregida ? 'Modificar dirección corregida:' : 'Corregir dirección:'}
-              </Text>
-              <Text style={styles.hint}>
-                💡 Llena los campos que conozcas. No es necesario completar todos.
-              </Text>
+            {/* Formulario */}
+            <View style={styles.form}>
+              <Text style={styles.formTitle}>Nueva dirección</Text>
+              <Text style={styles.formHint}>Llena los campos que conozcas</Text>
 
               <View style={styles.formRow}>
                 <View style={styles.formFieldLarge}>
@@ -167,16 +167,18 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
                     style={styles.fieldInput}
                     value={calle}
                     onChangeText={setCalle}
-                    placeholder="Ej: Orense, Av. Universidad"
+                    placeholder="Ej: Av. Universidad"
+                    placeholderTextColor={theme.muted}
                   />
                 </View>
                 <View style={styles.formFieldSmall}>
-                  <Text style={styles.fieldLabel}>Número</Text>
+                  <Text style={styles.fieldLabel}>Núm.</Text>
                   <TextInput
                     style={styles.fieldInput}
                     value={numero}
                     onChangeText={setNumero}
                     placeholder="125"
+                    placeholderTextColor={theme.muted}
                   />
                 </View>
               </View>
@@ -188,7 +190,8 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
                     style={styles.fieldInput}
                     value={colonia}
                     onChangeText={setColonia}
-                    placeholder="Ej: Valencia, Residencial"
+                    placeholder="Ej: Valencia"
+                    placeholderTextColor={theme.muted}
                   />
                 </View>
                 <View style={styles.formFieldSmall}>
@@ -198,6 +201,7 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
                     value={codigoPostal}
                     onChangeText={setCodigoPostal}
                     placeholder="67140"
+                    placeholderTextColor={theme.muted}
                     keyboardType="numeric"
                   />
                 </View>
@@ -210,7 +214,8 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
                     style={styles.fieldInput}
                     value={municipio}
                     onChangeText={setMunicipio}
-                    placeholder="Ej: San Pedro"
+                    placeholder="San Pedro"
+                    placeholderTextColor={theme.muted}
                   />
                 </View>
                 <View style={styles.formFieldHalf}>
@@ -220,6 +225,7 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
                     value={ciudad}
                     onChangeText={setCiudad}
                     placeholder="Monterrey"
+                    placeholderTextColor={theme.muted}
                   />
                 </View>
               </View>
@@ -229,60 +235,40 @@ export default function AddressSearchModal({ visible, onClose, pedido, onSuccess
             {resultado && resultado.exitoso && (
               <View style={styles.resultado}>
                 <View style={styles.resultadoHeader}>
-                  <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-                  <Text style={styles.resultadoTitle}>Dirección encontrada</Text>
+                  <Navigation size={18} color={theme.successFg} />
+                  <Text style={styles.resultadoTitle}>Ubicación encontrada</Text>
                 </View>
                 <Text style={styles.resultadoDireccion}>{resultado.direccionFormateada}</Text>
                 <View style={styles.resultadoStats}>
-                  <View style={styles.stat}>
-                    <Text style={styles.statLabel}>Confianza:</Text>
-                    <View style={[
-                      styles.confianzaBadge,
-                      { backgroundColor: resultado.confianza >= 0.7 ? '#10b98120' : '#f59e0b20' }
-                    ]}>
-                      <Text style={[
-                        styles.confianzaText,
-                        { color: resultado.confianza >= 0.7 ? '#10b981' : '#f59e0b' }
-                      ]}>
-                        {Math.round((resultado.confianza || 0) * 100)}%
-                      </Text>
-                    </View>
-                  </View>
-                  <View style={styles.stat}>
-                    <Text style={styles.statLabel}>Coordenadas:</Text>
-                    <Text style={styles.statValue}>
-                      {resultado.latitud?.toFixed(5)}, {resultado.longitud?.toFixed(5)}
-                    </Text>
-                  </View>
+                  <Text style={styles.resultadoConfianza}>
+                    Confianza: {Math.round((resultado.confianza || 0) * 100)}%
+                  </Text>
                 </View>
               </View>
             )}
-
-            {/* Botones */}
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={[styles.button, styles.buttonSecondary]}
-                onPress={handleCerrar}
-              >
-                <Text style={styles.buttonSecondaryText}>Cancelar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.button, styles.buttonPrimary, loading && styles.buttonDisabled]}
-                onPress={handleBuscar}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#ffffff" />
-                ) : (
-                  <>
-                    <Ionicons name="search" size={20} color="#ffffff" />
-                    <Text style={styles.buttonPrimaryText}>Buscar</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
           </ScrollView>
+
+          {/* Botones */}
+          <View style={styles.actions}>
+            <TouchableOpacity style={styles.buttonSecondary} onPress={handleCerrar}>
+              <Text style={styles.buttonSecondaryText}>Cancelar</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.buttonPrimary, loading && styles.buttonDisabled]}
+              onPress={handleBuscar}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#ffffff" size="small" />
+              ) : (
+                <>
+                  <Search size={18} color="#ffffff" strokeWidth={2.5} />
+                  <Text style={styles.buttonPrimaryText}>Buscar</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -296,118 +282,140 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
+    backgroundColor: theme.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    minHeight: '75%',
+    maxHeight: '92%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: theme.border,
+    gap: 12,
+  },
+  headerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: theme.canvas,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 20,
+    flex: 1,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#0f172a',
+    color: theme.ink,
+    fontFamily: FONTS.display,
   },
   closeButton: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: theme.canvas,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
   },
   contentContainer: {
     padding: 20,
+    paddingBottom: 20,
+  },
+  pedidoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.canvas,
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 12,
   },
   pedidoInfo: {
-    backgroundColor: '#f8fafc',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    flex: 1,
   },
-  pedidoLabel: {
+  pedidoCode: {
     fontSize: 12,
-    color: '#64748b',
-    marginBottom: 4,
+    color: theme.muted,
+    fontFamily: FONTS.bodyBold,
+    letterSpacing: 0.5,
   },
-  pedidoValue: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 4,
-  },
-  pedidoDestinatario: {
-    fontSize: 14,
-    color: '#475569',
+  pedidoName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.ink,
+    fontFamily: FONTS.bodySemiBold,
+    marginTop: 2,
   },
   direccionOriginal: {
-    backgroundColor: '#fef3c7',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: theme.canvas,
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  direccionLabel: {
+    fontSize: 11,
+    color: theme.muted,
+    fontFamily: FONTS.bodyBold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  direccionText: {
+    fontSize: 14,
+    color: theme.ink,
+    fontFamily: FONTS.bodyRegular,
+    lineHeight: 20,
+  },
+  direccionCorregida: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: theme.successBg,
+    padding: 14,
+    borderRadius: 12,
     marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b',
+    gap: 10,
   },
-  direccionOriginalLabel: {
-    fontSize: 12,
-    color: '#92400e',
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  direccionOriginalText: {
-    fontSize: 13,
-    color: '#78350f',
-  },
-  direccionCorregidaAnterior: {
-    backgroundColor: '#d1fae5',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#10b981',
+  direccionCorregidaContent: {
+    flex: 1,
   },
   direccionCorregidaLabel: {
-    fontSize: 12,
-    color: '#065f46',
-    fontWeight: '600',
+    fontSize: 11,
+    color: theme.successFg,
+    fontFamily: FONTS.bodyBold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
   direccionCorregidaText: {
     fontSize: 13,
-    color: '#047857',
+    color: theme.successFg,
+    fontFamily: FONTS.bodySemiBold,
   },
-  searchSection: {
+  form: {
     marginBottom: 16,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#334155',
-    marginBottom: 8,
+  formTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.ink,
+    fontFamily: FONTS.bodySemiBold,
+    marginBottom: 4,
   },
-  input: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 14,
-    color: '#0f172a',
-    minHeight: 80,
-  },
-  hint: {
+  formHint: {
     fontSize: 12,
-    color: '#64748b',
-    marginBottom: 12,
+    color: theme.muted,
+    fontFamily: FONTS.bodyRegular,
+    marginBottom: 16,
   },
   formRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
     marginBottom: 12,
   },
   formFieldLarge: {
@@ -421,26 +429,26 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#475569',
-    marginBottom: 4,
+    color: theme.muted,
+    fontFamily: FONTS.bodyBold,
+    marginBottom: 6,
   },
   fieldInput: {
-    backgroundColor: '#ffffff',
+    backgroundColor: theme.canvas,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
-    borderRadius: 8,
-    padding: 10,
+    borderColor: theme.border,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
     fontSize: 14,
-    color: '#0f172a',
+    color: theme.ink,
+    fontFamily: FONTS.bodyRegular,
   },
   resultado: {
-    backgroundColor: '#f0fdf4',
-    borderWidth: 1,
-    borderColor: '#86efac',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: theme.successBg,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
   },
   resultadoHeader: {
     flexDirection: 'row',
@@ -449,74 +457,66 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   resultadoTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#15803d',
+    color: theme.successFg,
+    fontFamily: FONTS.bodySemiBold,
   },
   resultadoDireccion: {
-    fontSize: 14,
-    color: '#166534',
-    marginBottom: 12,
+    fontSize: 13,
+    color: theme.successFg,
+    fontFamily: FONTS.bodyRegular,
+    marginBottom: 8,
   },
   resultadoStats: {
-    gap: 8,
-  },
-  stat: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
-  statLabel: {
+  resultadoConfianza: {
     fontSize: 12,
-    color: '#15803d',
-    fontWeight: '600',
-  },
-  statValue: {
-    fontSize: 12,
-    color: '#166534',
-    fontFamily: 'monospace',
-  },
-  confianzaBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  confianzaText: {
-    fontSize: 12,
-    fontWeight: '700',
+    color: theme.successFg,
+    fontFamily: FONTS.bodyBold,
   },
   actions: {
     flexDirection: 'row',
     gap: 12,
+    padding: 20,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
   },
-  button: {
+  buttonPrimary: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 14,
-    borderRadius: 8,
+    backgroundColor: theme.accent,
+    paddingVertical: 14,
+    borderRadius: 12,
     gap: 8,
   },
-  buttonPrimary: {
-    backgroundColor: '#3b82f6',
-  },
   buttonPrimaryText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: theme.accentInk,
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: FONTS.bodySemiBold,
   },
   buttonSecondary: {
-    backgroundColor: '#ffffff',
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.canvas,
+    paddingVertical: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#cbd5e1',
+    borderColor: theme.border,
   },
   buttonSecondaryText: {
-    color: '#475569',
-    fontSize: 16,
+    color: theme.ink,
+    fontSize: 15,
     fontWeight: '600',
+    fontFamily: FONTS.bodySemiBold,
   },
   buttonDisabled: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
 });

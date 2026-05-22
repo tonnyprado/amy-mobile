@@ -32,6 +32,7 @@ export default function RepartidorMainScreen({
   unreadCount = 0,
   toastNotification,
   onToastPress,
+  onComenzarRuta,
 }) {
   const { user } = useAuth();
   const { fontsLoaded, fontError } = useRepartidorFonts();
@@ -97,6 +98,8 @@ export default function RepartidorMainScreen({
             pedidos={pedidos || []}
             ubicacionActual={ubicacion}
             userName={user?.nombre || 'Usuario'}
+            onPedidoPress={handlePedidoPress}
+            onComenzarRuta={onComenzarRuta}
           />
         </View>
 
