@@ -17,7 +17,7 @@ export const S3_ENABLED = false;
  */
 export const S3_CONFIG = {
   // URL del endpoint del backend para upload
-  uploadEndpoint: '/api/upload',
+  uploadEndpoint: '/api/archivos/evidencias',
 
   // Bucket de S3 (configurar en backend)
   bucket: 'amy-delivery-evidencias',

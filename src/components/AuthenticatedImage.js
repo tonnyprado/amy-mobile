@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Image } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken } from '../utils/secureStorage';
 import { API_BASE_URL } from '../config/api';
-
-const STORAGE_KEY = '@amy_user';
 
 function isProtectedAssetUrl(uri) {
   if (!uri || uri.startsWith('data:') || uri.startsWith('file:') || uri.startsWith('blob:')) {
@@ -43,13 +41,11 @@ export default function AuthenticatedImage({ source, ...props }) {
       }
 
       try {
-        const userData = await AsyncStorage.getItem(STORAGE_KEY);
-        const user = userData ? JSON.parse(userData) : null;
+        const storedToken = await getToken();
         if (mounted) {
-          setToken(user?.accessToken ?? null);
+          setToken(storedToken ?? null);
         }
-      } catch (error) {
-        console.warn('No se pudo cargar token para asset protegido:', error);
+      } catch {
         if (mounted) {
           setToken(null);
         }

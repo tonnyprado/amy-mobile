@@ -31,7 +31,8 @@ import {
   MessageSquare,
   AlertCircle,
   Navigation,
-  Edit3
+  Edit3,
+  Lock
 } from 'lucide-react-native';
 import { getTheme, FONTS } from '../theme/repartidorTheme';
 import AddressSearchModal from '../components/AddressSearchModal';
@@ -57,6 +58,14 @@ const RECIBIDO_POR_OPTIONS = [
   { key: 'VECINO', label: 'Vecino', icon: Users },
 ];
 
+const SUBTIPO_AVISO_OPTIONS = [
+  { key: 'ALTO_RIESGO', label: 'Alto Riesgo', codigo: 'AR', description: 'Zona peligrosa o situación de riesgo' },
+  { key: 'CAMBIO_DOMICILIO', label: 'Cambio de Domicilio', codigo: 'CD', description: 'Cliente cambió de dirección' },
+  { key: 'DATO_INCORRECTO', label: 'Dato Incorrecto', codigo: 'DI', description: 'Información incorrecta o incompleta' },
+  { key: 'RECHAZO', label: 'Rechazo', codigo: 'R', description: 'Cliente rechaza el pedido' },
+  { key: 'AVISO', label: 'No se encuentra', codigo: 'A', description: 'Cliente no se encuentra en domicilio' },
+];
+
 export default function PaqueteDetalleScreen({ route, navigation }) {
   const { paquete: paqueteInicial, ubicacion } = route.params;
   const [paquete, setPaquete] = useState(paqueteInicial);
@@ -64,13 +73,20 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
   const [relacionRecibe, setRelacionRecibe] = useState(paquete.evidencias?.relacionRecibe || '');
   const [notasEntrega, setNotasEntrega] = useState(paquete.evidencias?.notasEntrega || '');
   const [motivoNoEntrega, setMotivoNoEntrega] = useState(paquete.evidencias?.motivoNoEntrega || '');
+  const [tipoAnomalia, setTipoAnomalia] = useState(null);
   const [fotos, setFotos] = useState(paquete.evidencias?.fotos || []);
+  const [fotoMapa, setFotoMapa] = useState(null);
+  const [fotoLlamada, setFotoLlamada] = useState(null);
+  const [mensajesAdicionales, setMensajesAdicionales] = useState('');
   const [loading, setLoading] = useState(false);
   const [boletaCompleta, setBoletaCompleta] = useState(null);
   const [loadingBoleta, setLoadingBoleta] = useState(false);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
 
   const estadoConfig = ESTADOS_CONFIG[paquete.estado] || ESTADOS_CONFIG.PENDIENTE;
+
+  // Solo mostrar información de contacto cuando el pedido esté EN_RUTA
+  const puedeVerContacto = paquete.estado === 'EN_RUTA';
 
   useEffect(() => {
     cargarBoletaCompleta();
@@ -144,6 +160,60 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
     }
   };
 
+  const handleTomarFotoMapa = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permisos', 'Se necesitan permisos de cámara');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.55,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const optimizedImage = await optimizarImagenLocal(result.assets[0].uri, {
+        quality: 0.6,
+        maxWidth: 1280,
+      });
+      setFotoMapa({
+        id: 'mapa_' + Date.now().toString(),
+        uri: optimizedImage.uri,
+        name: `mapa_${Date.now()}.jpg`
+      });
+    }
+  };
+
+  const handleTomarFotoLlamada = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permisos', 'Se necesitan permisos de cámara');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.55,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const optimizedImage = await optimizarImagenLocal(result.assets[0].uri, {
+        quality: 0.6,
+        maxWidth: 1280,
+      });
+      setFotoLlamada({
+        id: 'llamada_' + Date.now().toString(),
+        uri: optimizedImage.uri,
+        name: `llamada_${Date.now()}.jpg`
+      });
+    }
+  };
+
   const handleCambiarEstado = async (nuevoEstado) => {
     if (nuevoEstado === 'ENTREGADO') {
       if (!nombreRecibe.trim()) {
@@ -156,9 +226,19 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
       }
     }
 
-    if (nuevoEstado === 'NO_ENTREGADO' && !motivoNoEntrega.trim()) {
-      Alert.alert('Falta información', 'Escribe el motivo de no entrega');
-      return;
+    if (nuevoEstado === 'NO_ENTREGADO') {
+      if (!motivoNoEntrega.trim()) {
+        Alert.alert('Falta información', 'Escribe el motivo de no entrega');
+        return;
+      }
+      if (!tipoAnomalia) {
+        Alert.alert('Falta información', 'Selecciona el tipo de anomalía');
+        return;
+      }
+      if (fotos.length === 0) {
+        Alert.alert('Falta evidencia', 'Toma al menos una foto de evidencia');
+        return;
+      }
     }
 
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -174,8 +254,30 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
             setLoading(true);
             try {
               let fotosUrls = [];
+              let fotoMapaUrl = null;
+              let fotoLlamadaUrl = null;
+
+              // Subir foto principal (casa)
               if (fotos.length > 0) {
                 fotosUrls = await subirMultiplesFotos({ fotos, pedidoId: paquete.id });
+              }
+
+              // Subir foto del mapa
+              if (fotoMapa) {
+                const mapResult = await subirMultiplesFotos({
+                  fotos: [fotoMapa],
+                  pedidoId: paquete.id
+                });
+                fotoMapaUrl = mapResult.length > 0 ? mapResult[0].url : null;
+              }
+
+              // Subir foto de llamada
+              if (fotoLlamada) {
+                const llamadaResult = await subirMultiplesFotos({
+                  fotos: [fotoLlamada],
+                  pedidoId: paquete.id
+                });
+                fotoLlamadaUrl = llamadaResult.length > 0 ? llamadaResult[0].url : null;
               }
 
               await registrarIntentoEntrega({
@@ -185,8 +287,12 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
                 resultado: nuevoEstado,
                 motivoFallo: nuevoEstado === 'NO_ENTREGADO' ? 'OTRA_RAZON' : null,
                 descripcionFallo: nuevoEstado === 'NO_ENTREGADO' ? motivoNoEntrega : null,
+                subtipoAviso: nuevoEstado === 'NO_ENTREGADO' ? tipoAnomalia : null,
                 observaciones: notasEntrega || null,
                 fotoEvidenciaUrl: fotosUrls.length > 0 ? fotosUrls[0].url : null,
+                fotoMapaUrl,
+                fotoLlamadaUrl,
+                mensajesAdicionales: mensajesAdicionales.trim() || null,
                 firmaUrl: null,
                 nombreReceptor: nombreRecibe || null,
                 recibidoPor: relacionRecibe || null
@@ -253,7 +359,14 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
 
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Teléfono</Text>
-              <Text style={styles.infoValue}>{paquete.telefono || 'Sin teléfono'}</Text>
+              {puedeVerContacto ? (
+                <Text style={styles.infoValue}>{paquete.telefono || 'Sin teléfono'}</Text>
+              ) : (
+                <View style={styles.lockedInfo}>
+                  <Lock size={14} color={theme.muted} />
+                  <Text style={styles.lockedText}>Disponible al iniciar ruta</Text>
+                </View>
+              )}
             </View>
 
             <View style={styles.infoRow}>
@@ -284,9 +397,25 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
 
             {/* Botones de acción */}
             <View style={styles.actionButtons}>
-              <TouchableOpacity style={styles.actionBtn} onPress={handleLlamar}>
-                <Phone size={18} color={theme.ink} />
-                <Text style={styles.actionBtnText}>Llamar</Text>
+              <TouchableOpacity
+                style={[
+                  styles.actionBtn,
+                  !puedeVerContacto && styles.actionBtnDisabled
+                ]}
+                onPress={handleLlamar}
+                disabled={!puedeVerContacto}
+              >
+                {puedeVerContacto ? (
+                  <>
+                    <Phone size={18} color={theme.ink} />
+                    <Text style={styles.actionBtnText}>Llamar</Text>
+                  </>
+                ) : (
+                  <>
+                    <Lock size={18} color={theme.muted} />
+                    <Text style={[styles.actionBtnText, styles.actionBtnTextDisabled]}>Llamar</Text>
+                  </>
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtn} onPress={handleNavegar}>
@@ -420,6 +549,86 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
               </View>
             </View>
           </View>
+
+          {/* Tipo de Anomalía (solo si hay motivo de no entrega) */}
+          {motivoNoEntrega.trim().length > 0 && (
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <AlertCircle size={18} color="#DC2626" strokeWidth={2.5} />
+                <Text style={styles.cardTitle}>Tipo de Anomalía *</Text>
+              </View>
+
+              <View style={styles.anomaliaGrid}>
+                {SUBTIPO_AVISO_OPTIONS.map(({ key, label, codigo, description }) => (
+                  <TouchableOpacity
+                    key={key}
+                    style={[
+                      styles.anomaliaOption,
+                      tipoAnomalia === key && styles.anomaliaOptionSelected
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setTipoAnomalia(key);
+                    }}
+                  >
+                    <View style={styles.anomaliaHeader}>
+                      <Text style={[
+                        styles.anomaliaCodigo,
+                        tipoAnomalia === key && styles.anomaliaCodigoSelected
+                      ]}>{codigo}</Text>
+                    </View>
+                    <Text style={[
+                      styles.anomaliaLabel,
+                      tipoAnomalia === key && styles.anomaliaLabelSelected
+                    ]}>{label}</Text>
+                    <Text style={styles.anomaliaDescription}>{description}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Evidencias adicionales para anomalías */}
+              <View style={styles.evidenciasAdicionales}>
+                <Text style={styles.evidenciasTitle}>Evidencias Adicionales (Opcional)</Text>
+
+                <View style={styles.evidenciaRow}>
+                  <TouchableOpacity
+                    style={[styles.evidenciaBtn, fotoMapa && styles.evidenciaBtnDone]}
+                    onPress={handleTomarFotoMapa}
+                  >
+                    <Camera size={18} color={fotoMapa ? theme.successFg : theme.ink} />
+                    <Text style={[styles.evidenciaBtnText, fotoMapa && styles.evidenciaBtnTextDone]}>
+                      {fotoMapa ? '✓ Screenshot Mapa' : 'Screenshot Mapa'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.evidenciaBtn, fotoLlamada && styles.evidenciaBtnDone]}
+                    onPress={handleTomarFotoLlamada}
+                  >
+                    <Camera size={18} color={fotoLlamada ? theme.successFg : theme.ink} />
+                    <Text style={[styles.evidenciaBtnText, fotoLlamada && styles.evidenciaBtnTextDone]}>
+                      {fotoLlamada ? '✓ Screenshot Llamada' : 'Screenshot Llamada'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Mensajes de WhatsApp (URLs o notas)</Text>
+                  <View style={[styles.input, styles.inputMultiline]}>
+                    <TextInput
+                      style={[styles.inputText, styles.inputTextMultiline]}
+                      value={mensajesAdicionales}
+                      onChangeText={setMensajesAdicionales}
+                      placeholder="Ej: enviado WhatsApp..."
+                      placeholderTextColor={theme.muted}
+                      multiline
+                      numberOfLines={2}
+                    />
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Botones de Estado */}
           <View style={styles.stateButtons}>
@@ -565,6 +774,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: FONTS.bodyBold,
   },
+  lockedInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  lockedText: {
+    fontSize: 13,
+    color: theme.muted,
+    fontFamily: FONTS.bodySemiBold,
+    fontStyle: 'italic',
+  },
   correctedAddress: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -600,11 +820,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
   },
+  actionBtnDisabled: {
+    backgroundColor: theme.canvas,
+    borderWidth: 1,
+    borderColor: theme.border,
+    opacity: 0.6,
+  },
   actionBtnText: {
     fontSize: 13,
     fontWeight: '700',
     color: theme.ink,
     fontFamily: FONTS.bodySemiBold,
+  },
+  actionBtnTextDisabled: {
+    color: theme.muted,
   },
   alertBox: {
     backgroundColor: theme.warnBg,
@@ -750,5 +979,93 @@ const styles = StyleSheet.create({
   },
   stateBtnNoEntregado: {
     backgroundColor: '#DC2626',
+  },
+  // Estilos para anomalías
+  anomaliaGrid: {
+    gap: 8,
+    marginBottom: 16,
+  },
+  anomaliaOption: {
+    backgroundColor: theme.canvas,
+    borderWidth: 2,
+    borderColor: theme.border,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+  },
+  anomaliaOptionSelected: {
+    borderColor: '#DC2626',
+    backgroundColor: '#FEF2F2',
+  },
+  anomaliaHeader: {
+    marginBottom: 4,
+  },
+  anomaliaCodigo: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: theme.muted,
+    fontFamily: FONTS.bodyBold,
+    letterSpacing: 1,
+  },
+  anomaliaCodigoSelected: {
+    color: '#DC2626',
+  },
+  anomaliaLabel: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.ink,
+    fontFamily: FONTS.bodySemiBold,
+    marginBottom: 4,
+  },
+  anomaliaLabelSelected: {
+    color: '#DC2626',
+  },
+  anomaliaDescription: {
+    fontSize: 12,
+    color: theme.muted,
+    fontFamily: FONTS.bodyRegular,
+  },
+  evidenciasAdicionales: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
+  },
+  evidenciasTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.ink,
+    fontFamily: FONTS.bodySemiBold,
+    marginBottom: 12,
+  },
+  evidenciaRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  evidenciaBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: theme.canvas,
+    borderWidth: 1,
+    borderColor: theme.border,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  evidenciaBtnDone: {
+    backgroundColor: theme.successBg,
+    borderColor: theme.successFg,
+  },
+  evidenciaBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.ink,
+    fontFamily: FONTS.bodySemiBold,
+  },
+  evidenciaBtnTextDone: {
+    color: theme.successFg,
   },
 });

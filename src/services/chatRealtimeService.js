@@ -1,7 +1,5 @@
 import { API_BASE_URL } from '../config/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const STORAGE_KEY = '@amy_user';
+import { getToken } from '../utils/secureStorage';
 
 function buildWebSocketUrl() {
   if (!API_BASE_URL) {
@@ -26,19 +24,15 @@ async function buildAuthenticatedWebSocketUrl() {
   }
 
   try {
-    const userData = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!userData) {
-      return { wsUrl: baseUrl, authorizationHeader: null };
-    }
-
-    const user = JSON.parse(userData);
-    const token = user?.accessToken;
+    const token = await getToken();
     return {
       wsUrl: baseUrl,
       authorizationHeader: token ? `Bearer ${token}` : null,
     };
   } catch (error) {
-    console.warn('⚠️ No se pudo preparar token para WebSocket realtime:', error);
+    if (__DEV__) {
+      console.warn('No se pudo preparar token para WebSocket realtime:', error);
+    }
     return { wsUrl: baseUrl, authorizationHeader: null };
   }
 }
@@ -90,34 +84,24 @@ class ChatRealtimeService {
 
   async ensureConnected() {
     if (this.connected && this.socket) {
-      console.log('✅ WebSocket ya está conectado');
       return;
     }
 
     if (this.connectingPromise) {
-      console.log('⏳ Conexión WebSocket ya en progreso...');
       return this.connectingPromise;
     }
 
     const connectionConfig = await buildAuthenticatedWebSocketUrl();
     if (!connectionConfig?.wsUrl) {
-      const error = 'No se pudo determinar la URL del WebSocket';
-      console.error('❌', error);
-      throw new Error(error);
+      throw new Error('No se pudo determinar la URL del WebSocket');
     }
-
-    console.log('🔌 Intentando conectar WebSocket...');
-    console.log('📍 URL:', connectionConfig.wsUrl);
-    console.log('🔐 Con autenticación:', !!connectionConfig.authorizationHeader);
 
     this.connectingPromise = new Promise((resolve, reject) => {
       try {
         const socket = new WebSocket(connectionConfig.wsUrl);
         this.socket = socket;
-        console.log('🔄 Socket creado, esperando conexión...');
 
         socket.onopen = () => {
-          console.log('🎉 Socket ONOPEN - Conexión establecida!');
           const headers = {
             'accept-version': '1.2,1.1,1.0',
             'heart-beat': '0,0',
@@ -125,38 +109,26 @@ class ChatRealtimeService {
 
           if (connectionConfig.authorizationHeader) {
             headers.Authorization = connectionConfig.authorizationHeader;
-            console.log('🔐 Enviando CONNECT con autorización');
-          } else {
-            console.log('📤 Enviando CONNECT sin autorización');
           }
 
           socket.send(createFrame('CONNECT', headers));
-          console.log('✅ Frame CONNECT enviado');
         };
 
         socket.onmessage = (event) => {
-          console.log('📨 Mensaje recibido del WebSocket');
           this.handleRawMessage(event.data, resolve);
         };
 
-        socket.onerror = (error) => {
-          console.error('❌ Socket ONERROR:', error);
+        socket.onerror = () => {
           if (!this.connected) {
-            console.error('❌ Error durante conexión inicial');
             reject(new Error('No se pudo conectar al canal de tiempo real'));
           }
         };
 
-        socket.onclose = (event) => {
-          console.log('🔌 Socket ONCLOSE');
-          console.log('   Code:', event.code);
-          console.log('   Reason:', event.reason);
-          console.log('   Was clean:', event.wasClean);
+        socket.onclose = () => {
           this.connected = false;
           this.connectingPromise = null;
           this.notifyConnectionListeners(false);
           if (this.shouldReconnect && this.subscriptions.size > 0) {
-            console.log('🔄 Programando reconexión...');
             this.scheduleReconnect();
           }
         };
@@ -170,58 +142,47 @@ class ChatRealtimeService {
   }
 
   handleRawMessage(rawData, resolveConnect) {
-    console.log('📦 Raw data recibido, parseando frames...');
     const frames = String(rawData)
       .split('\u0000')
       .map((frame) => frame.trim())
       .filter(Boolean);
 
-    console.log(`📦 Encontrados ${frames.length} frames`);
-
     for (const rawFrame of frames) {
       const frame = parseFrame(rawFrame + '\u0000');
       if (!frame) {
-        console.warn('⚠️ Frame no pudo ser parseado');
         continue;
       }
 
-      console.log('📋 Frame parseado:', frame.command);
-
       if (frame.command === 'CONNECTED') {
-        console.log('🎊 Recibido CONNECTED del servidor!');
         this.connected = true;
         this.connectingPromise = null;
         this.notifyConnectionListeners(true);
-        console.log('📡 Estado: CONECTADO ✅');
         this.resubscribeAll();
         if (resolveConnect) {
           resolveConnect();
-          console.log('✅ Promise de conexión resuelta');
         }
         continue;
       }
 
       if (frame.command === 'MESSAGE') {
-        console.log('💬 Recibido MESSAGE');
         const subscriptionId = frame.headers.subscription;
-        console.log('   Subscription ID:', subscriptionId);
         const subscription = this.subscriptions.get(subscriptionId);
         if (!subscription) {
-          console.warn('⚠️ No se encontró suscripción para ID:', subscriptionId);
           continue;
         }
 
         try {
           const payload = JSON.parse(frame.body);
-          console.log('📨 Payload parseado, llamando callback...');
           subscription.callback(payload);
         } catch (error) {
-          console.error('❌ Error parseando mensaje realtime de chat:', error);
+          if (__DEV__) {
+            console.error('Error parseando mensaje realtime:', error);
+          }
         }
       }
 
-      if (frame.command === 'ERROR') {
-        console.error('❌ Recibido ERROR del servidor:', frame.headers.message || frame.body);
+      if (frame.command === 'ERROR' && __DEV__) {
+        console.error('WebSocket ERROR:', frame.headers.message || frame.body);
       }
     }
   }
@@ -280,9 +241,7 @@ class ChatRealtimeService {
 
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-      this.ensureConnected().catch((error) => {
-        console.warn('⚠️ Reintento realtime chat falló:', error.message);
-      });
+      this.ensureConnected().catch(() => {});
     }, 2500);
   }
 
@@ -297,8 +256,8 @@ class ChatRealtimeService {
     if (this.socket) {
       try {
         this.socket.close();
-      } catch (error) {
-        console.warn('⚠️ Error cerrando WebSocket chat realtime:', error);
+      } catch {
+        // Ignore close errors
       }
     }
 
@@ -326,8 +285,8 @@ class ChatRealtimeService {
     for (const listener of this.connectionListeners) {
       try {
         listener(isConnected);
-      } catch (error) {
-        console.warn('⚠️ Error notificando estado de conexión realtime:', error);
+      } catch {
+        // Ignore listener errors
       }
     }
   }

@@ -4,17 +4,23 @@
  * IMPORTANTE: En producción, configurar API_BASE_URL con tu servidor
  */
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getToken } from '../utils/secureStorage';
+import { validateRequestUrl } from '../utils/networkSecurity';
 
 // Base URL de la API - configurar según entorno
 const DEV_API_URL_LOCAL = 'http://192.168.0.14:8080'; // Tu IP local + puerto del backend
-const DEV_API_URL_RAILWAY = 'https://controlminutasapi-production.up.railway.app'; // Railway backend
+const DEV_API_URL_RAILWAY = 'https://controlminutasapi-production.up.railway.app'; // Railway backend (HTTPS)
 const PROD_API_URL = 'https://controlminutasapi-production.up.railway.app'; // Railway backend
 
-// Cambiar entre local y Railway en desarrollo
-export const API_BASE_URL = __DEV__ ? DEV_API_URL_LOCAL : PROD_API_URL;
+// Configuración de desarrollo:
+// - true: usar Railway (HTTPS) incluso en desarrollo
+// - false: usar servidor local (HTTP) para desarrollo
+const USE_HTTPS_IN_DEV = false;
 
-const STORAGE_KEY = '@amy_user';
+// En producción SIEMPRE usar HTTPS
+export const API_BASE_URL = __DEV__
+  ? (USE_HTTPS_IN_DEV ? DEV_API_URL_RAILWAY : DEV_API_URL_LOCAL)
+  : PROD_API_URL;
 
 // Timeout para peticiones (3 segundos para datos, 10 segundos para auth)
 const REQUEST_TIMEOUT = 3000;
@@ -44,29 +50,33 @@ export const apiClient = {
    */
   fetch: async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
-    console.log('🔗 Fetch URL:', url);
+
+    // Validar seguridad de la conexión
+    validateRequestUrl(url);
+
+    if (__DEV__) {
+      console.log('Fetch URL:', url);
+    }
 
     // Agregar headers por defecto (compresión gzip y token JWT)
     options.headers = {
-      'Accept-Encoding': 'gzip, deflate', // Optimización: habilitar compresión HTTP
+      'Accept-Encoding': 'gzip, deflate',
       ...options.headers,
     };
 
-    // Agregar token JWT si existe
+    // Agregar token JWT desde SecureStore
     try {
-      const userData = await AsyncStorage.getItem(STORAGE_KEY);
-      if (userData) {
-        const user = JSON.parse(userData);
-        if (user.accessToken) {
-          console.log('🔑 Agregando token JWT a la petición');
-          options.headers = {
-            ...options.headers,
-            'Authorization': `Bearer ${user.accessToken}`
-          };
-        }
+      const token = await getToken();
+      if (token) {
+        options.headers = {
+          ...options.headers,
+          'Authorization': `Bearer ${token}`
+        };
       }
     } catch (error) {
-      console.warn('⚠️ No se pudo obtener token:', error);
+      if (__DEV__) {
+        console.warn('No se pudo obtener token:', error);
+      }
     }
 
     // Usar timeout más largo para autenticación (10s) y normal para otros (3s)

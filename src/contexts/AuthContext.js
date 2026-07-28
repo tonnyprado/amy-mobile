@@ -1,25 +1,38 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveToken, getToken, deleteToken } from '../utils/secureStorage';
 import { login as loginApi, obtenerUsuarioActual } from '../services/authApi';
 
 const AuthContext = createContext(null);
 
+// Datos no sensibles del usuario (sin token)
 const STORAGE_KEY = '@amy_user';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Cargar usuario desde AsyncStorage al iniciar
+  // Cargar usuario desde storage al iniciar
   useEffect(() => {
     loadUserFromStorage();
   }, []);
 
   const loadUserFromStorage = async () => {
     try {
+      // Cargar datos del usuario desde AsyncStorage
       const userData = await AsyncStorage.getItem(STORAGE_KEY);
-      if (userData) {
-        setUser(JSON.parse(userData));
+      // Cargar token desde SecureStore
+      const token = await getToken();
+
+      if (userData && token) {
+        const parsedUser = JSON.parse(userData);
+        // Combinar usuario con token para mantener compatibilidad
+        setUser({ ...parsedUser, accessToken: token });
+      } else if (userData || token) {
+        // Datos inconsistentes, limpiar todo
+        console.warn('Datos de sesión inconsistentes, limpiando...');
+        await AsyncStorage.removeItem(STORAGE_KEY);
+        await deleteToken();
       }
     } catch (error) {
       console.error('Error al cargar usuario:', error);
@@ -37,9 +50,17 @@ export function AuthProvider({ children }) {
         throw new Error('Acceso denegado. Esta app es solo para repartidores y administradores.');
       }
 
-      // Guardar en estado y AsyncStorage (con accessToken incluido)
+      // Extraer token para almacenamiento seguro
+      const { accessToken, ...userWithoutToken } = userData;
+
+      // Guardar token de forma segura en SecureStore
+      await saveToken(accessToken);
+
+      // Guardar datos no sensibles en AsyncStorage
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userWithoutToken));
+
+      // Mantener compatibilidad con el resto de la app
       setUser(userData);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
 
       return userData;
     } catch (error) {
@@ -51,6 +72,9 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       setUser(null);
+      // Eliminar token seguro
+      await deleteToken();
+      // Eliminar datos de usuario
       await AsyncStorage.removeItem(STORAGE_KEY);
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
@@ -64,21 +88,25 @@ export function AuthProvider({ children }) {
         return;
       }
 
-      console.log('🔄 Refrescando datos del usuario...');
+      console.log('Refrescando datos del usuario...');
       const userData = await obtenerUsuarioActual();
 
-      // Mantener el accessToken en el objeto usuario para compatibilidad con apiClient
+      // Obtener token actual desde SecureStore
+      const currentToken = await getToken();
+
+      // Mantener el accessToken en el objeto usuario para compatibilidad
       const updatedUser = {
         ...userData,
-        accessToken: user.accessToken
+        accessToken: currentToken
       };
 
-      // Guardar datos actualizados
-      setUser(updatedUser);
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedUser));
+      // Guardar datos no sensibles actualizados
+      const { accessToken, ...userWithoutToken } = updatedUser;
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(userWithoutToken));
 
-      console.log('✅ Datos del usuario actualizados');
-      console.log('🚛 Carritos actualizados:', updatedUser.repartidor?.carritos);
+      setUser(updatedUser);
+
+      console.log('Datos del usuario actualizados');
 
       return updatedUser;
     } catch (error) {

@@ -7,6 +7,7 @@ import SectionShell from '../../components/repartidor/SectionShell';
 import SectionHeader from '../../components/repartidor/SectionHeader';
 import PkgPlaceholder from '../../components/repartidor/PkgPlaceholder';
 import Icon from '../../components/repartidor/Icon';
+import DriverWarningBanner from '../../components/DriverWarningBanner';
 import { FONTS } from '../../theme/repartidorTheme';
 
 export default function OrdersScreen({ theme, pedidos = [], onPedidoPress }) {
@@ -58,6 +59,9 @@ export default function OrdersScreen({ theme, pedidos = [], onPedidoPress }) {
         />
 
         <StatStrip theme={theme} counts={counts} statusMap={statusMap} />
+
+        {/* Banner de advertencias para repartidores */}
+        <DriverWarningBanner />
 
         <Filters theme={theme} counts={counts} filter={filter} setFilter={setFilter} />
 
