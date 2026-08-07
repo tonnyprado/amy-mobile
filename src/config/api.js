@@ -9,17 +9,17 @@ import { validateRequestUrl } from '../utils/networkSecurity';
 
 // Base URL de la API - configurar según entorno
 const DEV_API_URL_LOCAL = 'http://192.168.0.14:8080'; // Tu IP local + puerto del backend
-const DEV_API_URL_RAILWAY = 'https://controlminutasapi-production.up.railway.app'; // Railway backend (HTTPS)
-const PROD_API_URL = 'https://controlminutasapi-production.up.railway.app'; // Railway backend
+const DEV_API_URL_RENDER = 'https://amy-backend-minutaapi.onrender.com'; // Render backend (HTTPS)
+const PROD_API_URL = 'https://amy-backend-minutaapi.onrender.com'; // Render backend
 
 // Configuración de desarrollo:
-// - true: usar Railway (HTTPS) incluso en desarrollo
+// - true: usar Render (HTTPS) incluso en desarrollo
 // - false: usar servidor local (HTTP) para desarrollo
 const USE_HTTPS_IN_DEV = false;
 
 // En producción SIEMPRE usar HTTPS
 export const API_BASE_URL = __DEV__
-  ? (USE_HTTPS_IN_DEV ? DEV_API_URL_RAILWAY : DEV_API_URL_LOCAL)
+  ? (USE_HTTPS_IN_DEV ? DEV_API_URL_RENDER : DEV_API_URL_LOCAL)
   : PROD_API_URL;
 
 // Timeout para peticiones (3 segundos para datos, 10 segundos para auth)
