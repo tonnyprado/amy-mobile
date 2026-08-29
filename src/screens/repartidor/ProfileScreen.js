@@ -2,7 +2,7 @@
 // Pantalla 4 - Perfil y Configuración
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import SectionShell from '../../components/repartidor/SectionShell';
 import Icon from '../../components/repartidor/Icon';
@@ -11,15 +11,22 @@ import { FONTS, getTheme, DEFAULT_PALETTE } from '../../theme/repartidorTheme';
 export default function ProfileScreen({ route, navigation }) {
   const { user, logout } = useAuth();
   const theme = getTheme(DEFAULT_PALETTE);
+  const repartidor = user?.repartidor || {};
+
+  // Datos del usuario
+  const userName = repartidor?.nombre || user?.nombre || 'Usuario';
+  const userInitials = userName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'US';
+  const userRole = user?.rol === 'REPARTIDOR' ? 'Repartidor' : user?.rol || 'Usuario';
+  const apodo = repartidor?.apodo;
 
   const handleLogout = () => {
     Alert.alert(
-      'Cerrar sesión',
-      '¿Estás seguro de que deseas cerrar sesión?',
+      'Cerrar sesion',
+      '¿Estas seguro de que deseas cerrar sesion?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Cerrar sesión',
+          text: 'Cerrar sesion',
           style: 'destructive',
           onPress: () => {
             logout();
@@ -29,36 +36,67 @@ export default function ProfileScreen({ route, navigation }) {
     );
   };
 
-  const menuItems = [
+  const handleCall = (phone) => {
+    if (!phone) return;
+    Linking.openURL(`tel:${phone}`);
+  };
+
+  const handleEmail = (email) => {
+    if (!email) return;
+    Linking.openURL(`mailto:${email}`);
+  };
+
+  const profileFields = [
     {
       icon: 'user',
-      label: 'Información personal',
-      value: user?.nombre || 'Usuario',
-      onPress: () => Alert.alert('Información', 'Funcionalidad próximamente'),
+      label: 'Nombre completo',
+      value: repartidor?.nombre || user?.nombre || 'No disponible',
     },
     {
-      icon: 'mail',
-      label: 'Correo electrónico',
-      value: user?.email || 'No disponible',
-      onPress: () => Alert.alert('Correo', user?.email || 'No disponible'),
+      icon: 'hash',
+      label: 'Apodo',
+      value: repartidor?.apodo || 'Sin apodo',
     },
     {
       icon: 'phone',
-      label: 'Teléfono',
-      value: user?.telefono || 'No disponible',
-      onPress: () => Alert.alert('Teléfono', user?.telefono || 'No disponible'),
+      label: 'Telefono principal',
+      value: repartidor?.telefono1 || 'No registrado',
+      onPress: repartidor?.telefono1 ? () => handleCall(repartidor.telefono1) : null,
     },
     {
-      icon: 'bell',
-      label: 'Notificaciones',
-      value: 'Activadas',
-      onPress: () => Alert.alert('Notificaciones', 'Funcionalidad próximamente'),
+      icon: 'smartphone',
+      label: 'Telefono secundario',
+      value: repartidor?.telefono2 || 'No registrado',
+      onPress: repartidor?.telefono2 ? () => handleCall(repartidor.telefono2) : null,
+    },
+    {
+      icon: 'mail',
+      label: 'Correo personal',
+      value: repartidor?.correoPersonal || 'No registrado',
+      onPress: repartidor?.correoPersonal ? () => handleEmail(repartidor.correoPersonal) : null,
+    },
+    {
+      icon: 'mail',
+      label: 'Correo empresarial',
+      value: repartidor?.correoEmpresarial || user?.email || 'No registrado',
+      onPress: (repartidor?.correoEmpresarial || user?.email) ? () => handleEmail(repartidor?.correoEmpresarial || user?.email) : null,
+    },
+    {
+      icon: 'credit-card',
+      label: 'CURP',
+      value: repartidor?.curp || 'No registrado',
+      isSensitive: true,
+    },
+    {
+      icon: 'map-pin',
+      label: 'Rutas asignadas',
+      value: repartidor?.rutas?.length > 0 ? repartidor.rutas.join(', ') : 'Sin rutas asignadas',
     },
   ];
 
   return (
     <SectionShell bg={theme.accent} label="" theme={theme} padded={false}>
-      {/* Botón de cerrar */}
+      {/* Boton de cerrar */}
       <TouchableOpacity
         style={[styles.closeButton, { backgroundColor: theme.ink }]}
         onPress={() => navigation.goBack()}
@@ -75,61 +113,101 @@ export default function ProfileScreen({ route, navigation }) {
         <View style={styles.header}>
           <View style={[styles.avatar, { backgroundColor: theme.ink }]}>
             <Text style={[styles.avatarText, { color: theme.accent }]}>
-              {user?.nombre?.substring(0, 2).toUpperCase() || 'US'}
+              {userInitials}
             </Text>
           </View>
           <Text style={[styles.name, { color: theme.ink }]}>
-            {user?.nombre || 'Usuario'}
+            {userName}
           </Text>
+          {apodo && (
+            <View style={[styles.apodoBadge, { backgroundColor: theme.ink }]}>
+              <Text style={[styles.apodoText, { color: theme.accent }]}>{apodo}</Text>
+            </View>
+          )}
           <Text style={[styles.role, { color: theme.ink }]}>
-            {user?.rol === 'REPARTIDOR' ? 'Repartidor' : user?.rol || 'Usuario'}
+            {userRole}
           </Text>
+          {repartidor?.idRepartidor && (
+            <Text style={[styles.userId, { color: theme.ink }]}>
+              ID: {repartidor.idRepartidor}
+            </Text>
+          )}
         </View>
 
-        {/* Menú de opciones */}
+        {/* Menu de opciones */}
         <View style={[styles.menu, { backgroundColor: theme.canvas }]}>
           <Text style={[styles.menuTitle, { color: theme.muted }]}>
-            CONFIGURACIÓN
+            INFORMACION PERSONAL
           </Text>
-          
-          {menuItems.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.menuItem,
-                { borderBottomColor: theme.border },
-                index === menuItems.length - 1 && styles.menuItemLast,
-              ]}
-              onPress={item.onPress}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIcon, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-                  <Icon name={item.icon} size={18} color={theme.ink} />
-                </View>
-                <View style={styles.menuItemText}>
-                  <Text style={[styles.menuLabel, { color: theme.ink }]}>
-                    {item.label}
-                  </Text>
-                  {item.value && (
-                    <Text style={[styles.menuValue, { color: theme.muted }]}>
+
+          {profileFields.map((item, index) => {
+            const isUnavailable = item.value === 'No registrado' || item.value === 'Sin apodo' || item.value === 'Sin rutas asignadas';
+            const isClickable = !!item.onPress;
+
+            return (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.menuItem,
+                  { borderBottomColor: theme.border },
+                  index === profileFields.length - 1 && styles.menuItemLast,
+                ]}
+                onPress={item.onPress}
+                disabled={!isClickable}
+                activeOpacity={isClickable ? 0.7 : 1}
+              >
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.menuIcon, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+                    <Icon name={item.icon} size={18} color={theme.ink} />
+                  </View>
+                  <View style={styles.menuItemText}>
+                    <Text style={[styles.menuLabel, { color: theme.muted }]}>
+                      {item.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.menuValue,
+                        { color: isUnavailable ? theme.muted : theme.ink },
+                        isUnavailable && styles.menuValueMuted,
+                        item.isSensitive && styles.menuValueSensitive,
+                      ]}
+                      numberOfLines={2}
+                    >
                       {item.value}
                     </Text>
-                  )}
+                  </View>
                 </View>
-              </View>
-              <Icon name="chevron-right" size={18} color={theme.muted} />
-            </TouchableOpacity>
-          ))}
+                {isClickable && !isUnavailable && (
+                  <Icon name="chevron-right" size={18} color={theme.muted} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Botón de cerrar sesión */}
+        {/* Dispositivo */}
+        {repartidor?.sistemaOperativo && (
+          <View style={[styles.deviceCard, { backgroundColor: theme.canvas }]}>
+            <Text style={[styles.deviceLabel, { color: theme.muted }]}>DISPOSITIVO</Text>
+            <View style={[
+              styles.deviceBadge,
+              { backgroundColor: repartidor.sistemaOperativo === 'IOS' ? theme.ink : '#10B981' }
+            ]}>
+              <Text style={styles.deviceBadgeText}>
+                {repartidor.sistemaOperativo === 'IOS' ? 'iPhone' : 'Android'}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Boton de cerrar sesion */}
         <TouchableOpacity
           style={[styles.logoutButton, { backgroundColor: theme.ink }]}
           onPress={handleLogout}
         >
           <Icon name="log-out" size={18} color={theme.accent} strokeWidth={2.2} />
           <Text style={[styles.logoutText, { color: theme.accent }]}>
-            Cerrar sesión
+            Cerrar sesion
           </Text>
         </TouchableOpacity>
 
@@ -169,7 +247,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 24,
   },
   avatar: {
     width: 80,
@@ -191,23 +269,40 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   name: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     fontFamily: FONTS.display,
-    letterSpacing: -0.6,
+    letterSpacing: -0.5,
     marginBottom: 4,
   },
+  apodoBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginBottom: 8,
+  },
+  apodoText: {
+    fontSize: 12,
+    fontWeight: '700',
+    fontFamily: FONTS.bodyBold,
+  },
   role: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: FONTS.bodyBold,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     opacity: 0.7,
   },
+  userId: {
+    fontSize: 11,
+    fontFamily: FONTS.bodyRegular,
+    opacity: 0.5,
+    marginTop: 4,
+  },
   menu: {
     borderRadius: 20,
     padding: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
@@ -215,7 +310,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   menuTitle: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontFamily: FONTS.bodyBold,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
@@ -225,7 +320,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
   },
   menuItemLast: {
@@ -249,14 +344,54 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     fontFamily: FONTS.bodySemiBold,
     marginBottom: 2,
   },
   menuValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: FONTS.bodySemiBold,
+  },
+  menuValueMuted: {
+    fontStyle: 'italic',
+    fontWeight: '400',
+  },
+  menuValueSensitive: {
+    fontFamily: 'monospace',
     fontSize: 12,
-    fontFamily: FONTS.bodyRegular,
+    letterSpacing: 0.5,
+  },
+  deviceCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  deviceLabel: {
+    fontSize: 11,
+    fontFamily: FONTS.bodyBold,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  deviceBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  deviceBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: FONTS.bodyBold,
   },
   logoutButton: {
     flexDirection: 'row',
