@@ -193,9 +193,13 @@ export async function obtenerRecorridoActivo(idRepartidor) {
  * @param {number} intento.latitudIntento
  * @param {number} intento.longitudIntento
  * @param {string} intento.resultado - ENTREGADO o NO_ENTREGADO
- * @param {string} intento.motivoFallo - CLIENTE_NO_ESTABA, OTRA_RAZON
+ * @param {string} intento.motivoFallo - CLIENTE_NO_ESTABA, DATOS_INCORRECTOS, ALTO_RIESGO, CAMBIO_DOMICILIO, RECHAZO, OTRA_RAZON
  * @param {string} intento.descripcionFallo
+ * @param {string} intento.subtipoAviso - ALTO_RIESGO, CAMBIO_DOMICILIO, DATO_INCORRECTO, RECHAZO, AVISO
  * @param {string} intento.fotoEvidenciaUrl
+ * @param {string} intento.fotoMapaUrl - Foto del mapa/ubicacion
+ * @param {string} intento.fotoLlamadaUrl - Foto de evidencia de llamada
+ * @param {string} intento.mensajesAdicionales - Mensajes adicionales enviados
  * @param {string} intento.firmaUrl
  * @param {string} intento.observaciones
  * @param {string} intento.nombreReceptor - Nombre de quien recibe
@@ -210,7 +214,11 @@ export async function registrarIntentoEntrega(intento) {
     resultado: intento.resultado,
     motivoFallo: intento.motivoFallo || null,
     descripcionFallo: intento.descripcionFallo || null,
+    subtipoAviso: intento.subtipoAviso || null,
     fotoEvidenciaUrl: intento.fotoEvidenciaUrl || null,
+    fotoMapaUrl: intento.fotoMapaUrl || null,
+    fotoLlamadaUrl: intento.fotoLlamadaUrl || null,
+    mensajesAdicionales: intento.mensajesAdicionales || null,
     firmaUrl: intento.firmaUrl || null,
     observaciones: intento.observaciones || null,
     nombreReceptor: intento.nombreReceptor || null,
