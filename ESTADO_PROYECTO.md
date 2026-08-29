@@ -43,6 +43,42 @@ Migramos el backend de Railway a AWS (RDS + S3) y estamos preparando la app móv
 
 ## Pendiente por Hacer
 
+### URGENTE: Pantallas faltantes en Web Repartidor
+
+La versión web de repartidor (`amy-platform`) solo tiene la lista de paquetes. Faltan estas pantallas que sí tiene la versión móvil:
+
+#### 1. MapScreen (Mapa de Ruta)
+**Archivo móvil:** `amy-mobile/src/screens/repartidor/MapScreen.js`
+**Funcionalidades:**
+- Mapa con marcadores de pedidos
+- Timeline lateral con paradas numeradas
+- Tarjeta de "Próxima parada" con ETA y distancia
+- Botón "Comenzar Ruta" (cambia pedidos PENDIENTE → EN_RUTA)
+- Controles de zoom y centrar ubicación
+- Ruta dibujada entre ubicación actual y destino
+
+#### 2. StatsScreen (Estadísticas)
+**Archivo móvil:** `amy-mobile/src/screens/repartidor/StatsScreen.js`
+**Funcionalidades:**
+- Entregas de hoy vs asignadas (número grande)
+- Gráfico de barras semanal
+- Grid 2x2 con: Distancia, Calificación, Eficiencia, Ingreso
+- Strip de logros/racha
+
+#### 3. ProfileScreen (Perfil)
+**Archivo móvil:** `amy-mobile/src/screens/repartidor/ProfileScreen.js`
+**Funcionalidades:**
+- Avatar con iniciales
+- Información del usuario
+- Menú de configuración
+- Botón cerrar sesión
+
+#### 4. Navegación entre pantallas
+**Archivo móvil:** `amy-mobile/src/screens/repartidor/RepartidorMainScreen.js`
+- SideRail (navegación lateral con 01, 02, 03)
+- PagerView para swipe vertical entre pantallas
+- ChatFab (botón flotante de chat)
+
 ### Prioritario: Build iOS
 1. **Actualizar macOS** - Necesario para instalar Xcode más reciente
 2. **Instalar Xcode** - Requerido para `npx expo run:ios`
