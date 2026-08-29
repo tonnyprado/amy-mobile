@@ -8,6 +8,72 @@ import Pill from '../../components/repartidor/Pill';
 import Icon from '../../components/repartidor/Icon';
 import { FONTS } from '../../theme/repartidorTheme';
 
+/**
+ * Genera un tip/consejo basado en las estadisticas del repartidor
+ */
+function getTipBasedOnStats(eficiencia, deliveriesToday, assignedToday, pending) {
+  const hora = new Date().getHours();
+
+  // Si completo todas las entregas
+  if (assignedToday > 0 && pending === 0) {
+    return {
+      icon: '🎉',
+      title: '¡Excelente trabajo!',
+      message: 'Completaste todas tus entregas de hoy. Descansa o preparate para manana.',
+    };
+  }
+
+  // Basado en eficiencia
+  if (eficiencia >= 80) {
+    return {
+      icon: '🔥',
+      title: '¡Vas muy bien!',
+      message: `Solo te faltan ${pending} entregas. ¡Ya casi terminas!`,
+    };
+  }
+
+  if (eficiencia >= 50) {
+    return {
+      icon: '💪',
+      title: 'Buen ritmo',
+      message: 'Manten el paso. Recuerda verificar las direcciones antes de salir.',
+    };
+  }
+
+  // Si es temprano y tiene muchas pendientes
+  if (hora < 12 && pending > 0) {
+    return {
+      icon: '☀️',
+      title: 'Empieza tu ruta',
+      message: 'Las mananas tienen menos trafico. Buen momento para avanzar.',
+    };
+  }
+
+  // Si es tarde y tiene pendientes
+  if (hora >= 12 && hora < 18 && pending > 0) {
+    return {
+      icon: '⏰',
+      title: 'Aprovecha la tarde',
+      message: `Tienes ${pending} entregas pendientes. ¡Tu puedes!`,
+    };
+  }
+
+  // Default
+  if (pending > 0) {
+    return {
+      icon: '📦',
+      title: 'Entregas pendientes',
+      message: `Tienes ${pending} entregas por completar hoy.`,
+    };
+  }
+
+  return {
+    icon: '👋',
+    title: 'Sin entregas asignadas',
+    message: 'No tienes entregas asignadas por el momento.',
+  };
+}
+
 export default function StatsScreen({ theme, stats }) {
   const defaultStats = {
     deliveriesToday: 0,
@@ -20,6 +86,14 @@ export default function StatsScreen({ theme, stats }) {
 
   const currentStats = { ...defaultStats, ...stats };
 
+  // Calcular eficiencia y pending para el tip
+  const { deliveriesToday, assignedToday } = currentStats;
+  const pending = assignedToday - deliveriesToday;
+  const eficiencia = assignedToday > 0
+    ? Math.round((deliveriesToday / assignedToday) * 100)
+    : 0;
+  const tip = getTipBasedOnStats(eficiencia, deliveriesToday, assignedToday, pending);
+
   return (
     <SectionShell bg={theme.accent} label="03 Estadísticas" theme={theme} padded={false}>
       <View style={{ paddingTop: 56 }}>
@@ -29,6 +103,7 @@ export default function StatsScreen({ theme, stats }) {
 
         <HeroCard theme={theme} stats={currentStats} />
         <StatGrid theme={theme} stats={currentStats} />
+        <TipCard theme={theme} tip={tip} />
         <AchievementStrip theme={theme} />
       </View>
     </SectionShell>
@@ -161,6 +236,20 @@ function StatGrid({ theme, stats }) {
   );
 }
 
+function TipCard({ theme, tip }) {
+  return (
+    <View style={[styles.tipCard, { backgroundColor: theme.canvas }]}>
+      <View style={[styles.tipIcon, { backgroundColor: '#F3F0FF' }]}>
+        <Text style={styles.tipEmoji}>{tip.icon}</Text>
+      </View>
+      <View style={styles.tipContent}>
+        <Text style={[styles.tipTitle, { color: theme.ink }]}>{tip.title}</Text>
+        <Text style={[styles.tipMessage, { color: theme.muted }]}>{tip.message}</Text>
+      </View>
+    </View>
+  );
+}
+
 function AchievementStrip({ theme }) {
   return (
     <TouchableOpacity
@@ -172,10 +261,10 @@ function AchievementStrip({ theme }) {
       </View>
       <View style={styles.achievementText}>
         <Text style={[styles.achievementTitle, { color: theme.ink }]}>
-          Racha de 5 días sin incidencias
+          Racha de 5 dias sin incidencias
         </Text>
         <Text style={[styles.achievementSubtitle, { color: theme.ink }]}>
-          Sigue así para bono mensual
+          Sigue asi para bono mensual
         </Text>
       </View>
       <Icon name="chevron-right" size={16} color={theme.ink} />
@@ -359,5 +448,43 @@ const styles = StyleSheet.create({
   achievementSubtitle: {
     fontSize: 11,
     opacity: 0.6,
+  },
+  tipCard: {
+    marginHorizontal: 20,
+    marginTop: 10,
+    padding: 16,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  tipIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tipEmoji: {
+    fontSize: 20,
+  },
+  tipContent: {
+    flex: 1,
+  },
+  tipTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    fontFamily: FONTS.bodyBold,
+    marginBottom: 2,
+  },
+  tipMessage: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: FONTS.bodyRegular,
   },
 });
