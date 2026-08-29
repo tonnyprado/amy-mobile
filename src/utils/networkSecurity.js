@@ -8,7 +8,8 @@
 
 // Dominios de producción permitidos
 const ALLOWED_PRODUCTION_HOSTS = [
-  'controlminutasapi-production.up.railway.app',
+  'amy-backend-minutaapi.onrender.com',  // Render (actual)
+  'controlminutasapi-production.up.railway.app',  // Railway (legacy)
 ];
 
 // En desarrollo, permitir conexiones locales
