@@ -7,9 +7,9 @@
 
 /**
  * Feature flag para habilitar/deshabilitar S3
- * Cambiar a true cuando S3 esté configurado en el backend
+ * S3 está configurado en el backend de Render
  */
-export const S3_ENABLED = false;
+export const S3_ENABLED = true;
 
 /**
  * Configuración de S3
