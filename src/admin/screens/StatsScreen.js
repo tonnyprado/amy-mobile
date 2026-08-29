@@ -59,8 +59,7 @@ export default function StatsScreen({ data, onOpenScanner, onOpenMoreDetails, on
         showsVerticalScrollIndicator={false}
       >
         {/* Título */}
-        <Text style={styles.kicker}>01 — OPERACIÓN DE HOY</Text>
-        <Text style={styles.title}>Estadísticas{'\n'}e incidencias</Text>
+        <Text style={styles.title}>Estadísticas</Text>
 
         {/* 3 Hero Stats */}
         <View style={styles.heroRow}>
@@ -239,22 +238,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: SPACING.xl,
   },
-  kicker: {
-    fontFamily: FONTS.body,
-    fontSize: FONT_SIZES.xs,
-    letterSpacing: 1.4,
-    color: 'rgba(0,0,0,0.5)',
-    textTransform: 'uppercase',
-    marginTop: SPACING.sm,
-    marginBottom: 4,
-  },
   title: {
     fontFamily: FONTS.displayBlack,
-    fontSize: 38,
-    letterSpacing: -1,
-    lineHeight: 42,
+    fontSize: 28,
+    letterSpacing: -0.5,
     color: theme.ink,
-    marginBottom: SPACING.xl,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.lg,
   },
   heroRow: {
     flexDirection: 'row',

@@ -89,7 +89,6 @@ export default function RepartidoresScreen({ onOpenChat }) {
       {/* Header */}
       <View style={styles.header}>
         <AdminBadge />
-        <Text style={styles.kicker}>03 — Equipo</Text>
         <Text style={styles.title}>Repartidores</Text>
       </View>
 
@@ -206,15 +205,6 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: SPACING.xl,
     paddingTop: 6,
-  },
-  kicker: {
-    fontFamily: FONTS.body,
-    fontSize: FONT_SIZES.xs,
-    letterSpacing: 1.4,
-    color: theme.muted,
-    textTransform: 'uppercase',
-    marginTop: 8,
-    marginBottom: 4,
   },
   title: {
     fontFamily: FONTS.display,

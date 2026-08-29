@@ -148,8 +148,7 @@ export default function ChatListScreen({ repartidores = [], onBack, onClearUnrea
           showsVerticalScrollIndicator={false}
         >
           {/* Título */}
-          <Text style={styles.kicker}>PANEL ADMIN</Text>
-          <Text style={styles.title}>Chat con repartidores</Text>
+          <Text style={styles.title}>Chat</Text>
 
           {/* Mensaje Masivo */}
           <TouchableOpacity
@@ -312,14 +311,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: SPACING.xl,
-  },
-  kicker: {
-    fontFamily: FONTS.body,
-    fontSize: FONT_SIZES.xs,
-    letterSpacing: 1.4,
-    color: theme.muted,
-    textTransform: 'uppercase',
-    marginBottom: 4,
   },
   title: {
     fontFamily: FONTS.displayBlack,

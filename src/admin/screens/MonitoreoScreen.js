@@ -66,8 +66,7 @@ export default function MonitoreoScreen({ data, repartidores = [], userName = 'A
           </View>
         )}
 
-        <Text style={styles.kicker}>02 — Monitoreo</Text>
-        <Text style={styles.greeting}>Hola, {userName} 👋</Text>
+        <Text style={styles.greeting}>Hola, {userName}</Text>
       </View>
 
       {/* Scrollable content */}
@@ -182,14 +181,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.body,
     fontSize: FONT_SIZES.base,
     color: theme.ink,
-  },
-  kicker: {
-    fontFamily: FONTS.body,
-    fontSize: FONT_SIZES.xs,
-    letterSpacing: 1.4,
-    color: theme.muted,
-    textTransform: 'uppercase',
-    marginBottom: 4,
   },
   greeting: {
     fontFamily: FONTS.display,
