@@ -41,43 +41,43 @@ Migramos el backend de Railway a AWS (RDS + S3) y estamos preparando la app móv
 
 ---
 
-## Pendiente por Hacer
+## Completado Recientemente
 
-### URGENTE: Pantallas faltantes en Web Repartidor
+### Pantallas Web Repartidor (COMPLETADO)
 
-La versión web de repartidor (`amy-platform`) solo tiene la lista de paquetes. Faltan estas pantallas que sí tiene la versión móvil:
+Se agregaron las pantallas faltantes a la versión web de repartidor (`amy-platform`):
 
-#### 1. MapScreen (Mapa de Ruta)
-**Archivo móvil:** `amy-mobile/src/screens/repartidor/MapScreen.js`
-**Funcionalidades:**
-- Mapa con marcadores de pedidos
-- Timeline lateral con paradas numeradas
-- Tarjeta de "Próxima parada" con ETA y distancia
-- Botón "Comenzar Ruta" (cambia pedidos PENDIENTE → EN_RUTA)
-- Controles de zoom y centrar ubicación
-- Ruta dibujada entre ubicación actual y destino
+#### 1. RepartidorMap (Mapa de Ruta) - COMPLETADO
+**Archivo web:** `amy-platform/src/pages/RepartidorView/components/RepartidorMap.jsx`
+- Mapa con Google Maps y marcadores de pedidos
+- Timeline lateral con paradas numeradas (estados: pendiente, en_ruta, entregado)
+- Tarjeta de progreso con barra de completado
+- Tarjeta de "Proxima parada" con direccion
+- Boton "Comenzar Ruta" / "Navegar"
+- Controles de zoom y centrar ubicacion
 
-#### 2. StatsScreen (Estadísticas)
-**Archivo móvil:** `amy-mobile/src/screens/repartidor/StatsScreen.js`
-**Funcionalidades:**
-- Entregas de hoy vs asignadas (número grande)
-- Gráfico de barras semanal
-- Grid 2x2 con: Distancia, Calificación, Eficiencia, Ingreso
+#### 2. RepartidorStats (Estadisticas) - COMPLETADO
+**Archivo web:** `amy-platform/src/pages/RepartidorView/components/RepartidorStats.jsx`
+- Hero card con entregas de hoy y grafico de barras semanal
+- Grid 2x2 con: Distancia, Calificacion, Eficiencia, Ingreso
 - Strip de logros/racha
 
-#### 3. ProfileScreen (Perfil)
-**Archivo móvil:** `amy-mobile/src/screens/repartidor/ProfileScreen.js`
-**Funcionalidades:**
+#### 3. RepartidorProfile (Perfil) - COMPLETADO
+**Archivo web:** `amy-platform/src/pages/RepartidorView/components/RepartidorProfile.jsx`
 - Avatar con iniciales
-- Información del usuario
-- Menú de configuración
-- Botón cerrar sesión
+- Informacion del usuario (nombre, email, telefono)
+- Menu de configuracion
+- Boton cerrar sesion
 
-#### 4. Navegación entre pantallas
-**Archivo móvil:** `amy-mobile/src/screens/repartidor/RepartidorMainScreen.js`
-- SideRail (navegación lateral con 01, 02, 03)
-- PagerView para swipe vertical entre pantallas
-- ChatFab (botón flotante de chat)
+#### 4. RepartidorTabs (Navegacion) - COMPLETADO
+**Archivo web:** `amy-platform/src/pages/RepartidorView/components/RepartidorTabs.jsx`
+- Bottom tab bar con 4 tabs: Mapa, Paquetes, Stats, Perfil
+- Badge con contador de paquetes pendientes
+- Estilo mobile-first
+
+---
+
+## Pendiente por Hacer
 
 ### Prioritario: Build iOS
 1. **Actualizar macOS** - Necesario para instalar Xcode más reciente
@@ -114,10 +114,18 @@ Iniciar sesión como repartidor y usar desde el navegador del celular.
 ## Archivos Clave Modificados
 
 ### amy-platform
-- `src/pages/RepartidorView/RepartidorPanel.jsx`
-- `src/pages/RepartidorView/RepartidorPanel.css`
+- `src/pages/RepartidorView/RepartidorPanel.jsx` - Integra todas las pantallas con tabs
+- `src/pages/RepartidorView/RepartidorPanel.css` - Estilos base mobile-first
 - `src/pages/RepartidorView/components/ListaPaquetes.jsx`
 - `src/pages/RepartidorView/components/ListaPaquetes.css`
+- `src/pages/RepartidorView/components/RepartidorMap.jsx` - NUEVO: Mapa de ruta
+- `src/pages/RepartidorView/components/RepartidorMap.css` - NUEVO
+- `src/pages/RepartidorView/components/RepartidorStats.jsx` - NUEVO: Estadisticas
+- `src/pages/RepartidorView/components/RepartidorStats.css` - NUEVO
+- `src/pages/RepartidorView/components/RepartidorProfile.jsx` - NUEVO: Perfil
+- `src/pages/RepartidorView/components/RepartidorProfile.css` - NUEVO
+- `src/pages/RepartidorView/components/RepartidorTabs.jsx` - NUEVO: Tabs de navegacion
+- `src/pages/RepartidorView/components/RepartidorTabs.css` - NUEVO
 - `src/services/repartidorApi.js`
 
 ### amy-mobile
