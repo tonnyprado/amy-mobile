@@ -2,17 +2,13 @@
 // Banner de advertencia para repartidores sobre manejo de paquetes
 
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
-import { AlertTriangle, X, Package, Shield, Camera } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { AlertTriangle, X, Package, Shield, Camera, ChevronRight } from 'lucide-react-native';
 import { getTheme, FONTS } from '../theme/repartidorTheme';
 import * as Haptics from 'expo-haptics';
 
 const theme = getTheme('violet');
 
-/**
- * Banner de advertencia prominente para repartidores
- * Muestra reglas importantes sobre el manejo de paquetes
- */
 export default function DriverWarningBanner({ onDismiss }) {
   const [showDetails, setShowDetails] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -25,39 +21,45 @@ export default function DriverWarningBanner({ onDismiss }) {
   const handleDismiss = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsDismissed(true);
-    if (onDismiss) {
-      onDismiss();
-    }
+    onDismiss?.();
   };
 
-  if (isDismissed) {
-    return null;
-  }
+  const handleUnderstood = async () => {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowDetails(false);
+  };
+
+  if (isDismissed) return null;
 
   return (
     <>
-      <View style={styles.banner}>
-        <View style={styles.bannerIcon}>
-          <AlertTriangle size={24} color="#DC2626" strokeWidth={2.5} />
+      {/* Banner compacto */}
+      <TouchableOpacity
+        style={styles.banner}
+        onPress={handleShowDetails}
+        activeOpacity={0.8}
+      >
+        <View style={styles.bannerIconWrap}>
+          <AlertTriangle size={20} color={theme.ink} strokeWidth={2.5} />
         </View>
 
         <View style={styles.bannerContent}>
-          <Text style={styles.bannerTitle}>⚠️ Recordatorio Importante</Text>
-          <Text style={styles.bannerText}>
-            Manejo cuidadoso de paquetes requerido
-          </Text>
-
-          <TouchableOpacity style={styles.detailsButton} onPress={handleShowDetails}>
-            <Text style={styles.detailsButtonText}>Ver detalles</Text>
-          </TouchableOpacity>
+          <Text style={styles.bannerTitle}>Recordatorio de manejo</Text>
+          <Text style={styles.bannerSubtitle}>Toca para ver las normas</Text>
         </View>
 
-        <TouchableOpacity style={styles.dismissButton} onPress={handleDismiss}>
-          <X size={20} color={theme.muted} />
-        </TouchableOpacity>
-      </View>
+        <ChevronRight size={20} color={theme.muted} />
 
-      {/* Modal con detalles completos */}
+        <TouchableOpacity
+          style={styles.dismissBtn}
+          onPress={handleDismiss}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <X size={18} color={theme.muted} />
+        </TouchableOpacity>
+      </TouchableOpacity>
+
+      {/* Modal de detalles */}
       <Modal
         visible={showDetails}
         animationType="slide"
@@ -65,67 +67,96 @@ export default function DriverWarningBanner({ onDismiss }) {
         onRequestClose={() => setShowDetails(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <AlertTriangle size={28} color="#DC2626" strokeWidth={2.5} />
-              <Text style={styles.modalTitle}>Normas de Manejo de Paquetes</Text>
+          <View style={styles.modalSheet}>
+            {/* Handle */}
+            <View style={styles.sheetHandle} />
+
+            {/* Header */}
+            <View style={styles.sheetHeader}>
+              <View style={styles.headerIcon}>
+                <AlertTriangle size={24} color={theme.accent} strokeWidth={2.5} />
+              </View>
+              <Text style={styles.sheetTitle}>Normas de entrega</Text>
               <TouchableOpacity
-                style={styles.modalClose}
+                style={styles.closeBtn}
                 onPress={() => setShowDetails(false)}
               >
-                <X size={24} color={theme.ink} />
+                <X size={22} color={theme.muted} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modalBody}>
-              <WarningItem
-                icon={Package}
-                title="Manejo Cuidadoso"
-                description="NO golpees, arrojes o maltrates los paquetes. Cada pedido debe tratarse con cuidado."
-                severity="high"
-              />
-
-              <WarningItem
-                icon={Shield}
-                title="Responsabilidad"
-                description="Eres responsable de cada paquete desde que lo recibes hasta que lo entregas. Cualquier daño será tu responsabilidad."
-                severity="high"
-              />
-
-              <WarningItem
-                icon={Camera}
-                title="Evidencia Fotográfica"
-                description="Todas las entregas y avisos requieren evidencia fotográfica. Toma fotos claras de cada intento."
-                severity="medium"
-              />
-
-              <View style={styles.rulesBox}>
-                <Text style={styles.rulesTitle}>📋 Reglas Básicas:</Text>
-                <Text style={styles.ruleText}>✓ Carga y descarga con cuidado</Text>
-                <Text style={styles.ruleText}>✓ No apiles paquetes pesados sobre otros</Text>
-                <Text style={styles.ruleText}>✓ Mantén los paquetes secos y protegidos</Text>
-                <Text style={styles.ruleText}>✓ Reporta cualquier daño inmediatamente</Text>
-                <Text style={styles.ruleText}>✓ Sigue todas las instrucciones especiales</Text>
+            <ScrollView
+              style={styles.sheetBody}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Regla 1 */}
+              <View style={styles.ruleCard}>
+                <View style={styles.ruleIcon}>
+                  <Package size={22} color={theme.accent} />
+                </View>
+                <View style={styles.ruleContent}>
+                  <Text style={styles.ruleTitle}>Manejo cuidadoso</Text>
+                  <Text style={styles.ruleText}>
+                    No golpees ni arrojes los paquetes. Cada pedido debe tratarse con cuidado.
+                  </Text>
+                </View>
               </View>
 
-              <View style={styles.consequencesBox}>
-                <Text style={styles.consequencesTitle}>⚠️ Consecuencias:</Text>
-                <Text style={styles.consequencesText}>
-                  El maltrato de paquetes, pérdida de mercancía o negligencia puede resultar en:
+              {/* Regla 2 */}
+              <View style={styles.ruleCard}>
+                <View style={styles.ruleIcon}>
+                  <Shield size={22} color={theme.accent} />
+                </View>
+                <View style={styles.ruleContent}>
+                  <Text style={styles.ruleTitle}>Tu responsabilidad</Text>
+                  <Text style={styles.ruleText}>
+                    Eres responsable de cada paquete desde que lo recibes hasta que lo entregas.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Regla 3 */}
+              <View style={styles.ruleCard}>
+                <View style={styles.ruleIcon}>
+                  <Camera size={22} color={theme.accent} />
+                </View>
+                <View style={styles.ruleContent}>
+                  <Text style={styles.ruleTitle}>Evidencia requerida</Text>
+                  <Text style={styles.ruleText}>
+                    Todas las entregas y avisos requieren fotos claras como evidencia.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Lista de puntos */}
+              <View style={styles.checklistCard}>
+                <Text style={styles.checklistTitle}>Checklist</Text>
+                <Text style={styles.checklistItem}>Carga y descarga con cuidado</Text>
+                <Text style={styles.checklistItem}>No apiles paquetes pesados sobre otros</Text>
+                <Text style={styles.checklistItem}>Mantén los paquetes secos</Text>
+                <Text style={styles.checklistItem}>Reporta cualquier daño inmediatamente</Text>
+              </View>
+
+              {/* Consecuencias */}
+              <View style={styles.warningCard}>
+                <Text style={styles.warningTitle}>Incumplimiento</Text>
+                <Text style={styles.warningText}>
+                  El maltrato de paquetes o negligencia puede resultar en descuentos, suspensión o terminación de contrato.
                 </Text>
-                <Text style={styles.consequenceItem}>• Descuentos de nómina</Text>
-                <Text style={styles.consequenceItem}>• Suspensión temporal</Text>
-                <Text style={styles.consequenceItem}>• Terminación de contrato</Text>
               </View>
 
+              {/* Espaciado extra para el botón */}
+              <View style={{ height: 100 }} />
+            </ScrollView>
+
+            {/* Botón fijo */}
+            <View style={styles.sheetFooter}>
               <TouchableOpacity
-                style={styles.understoodButton}
-                onPress={() => {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  setShowDetails(false);
-                }}
+                style={styles.understoodBtn}
+                onPress={handleUnderstood}
+                activeOpacity={0.8}
               >
-                <Text style={styles.understoodButtonText}>He Leído y Entendido</Text>
+                <Text style={styles.understoodText}>Entendido</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -135,207 +166,211 @@ export default function DriverWarningBanner({ onDismiss }) {
   );
 }
 
-/**
- * Item individual de advertencia
- */
-function WarningItem({ icon: Icon, title, description, severity = 'medium' }) {
-  const severityColors = {
-    high: '#DC2626',
-    medium: '#F59E0B',
-    low: '#3B82F6',
-  };
-
-  const color = severityColors[severity];
-
-  return (
-    <View style={styles.warningItem}>
-      <View style={[styles.warningIcon, { backgroundColor: color + '20' }]}>
-        <Icon size={24} color={color} strokeWidth={2.5} />
-      </View>
-      <View style={styles.warningContent}>
-        <Text style={styles.warningTitle}>{title}</Text>
-        <Text style={styles.warningDescription}>{description}</Text>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
+  // Banner
   banner: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#FEF2F2',
-    borderWidth: 2,
-    borderColor: '#FCA5A5',
-    borderRadius: 12,
-    padding: 16,
-    margin: 16,
+    alignItems: 'center',
+    backgroundColor: theme.warnBg,
+    borderRadius: 14,
+    padding: 14,
+    marginHorizontal: 16,
+    marginVertical: 8,
     gap: 12,
   },
-  bannerIcon: {
-    marginTop: 2,
+  bannerIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: theme.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   bannerContent: {
     flex: 1,
   },
   bannerTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
-    color: '#991B1B',
+    color: theme.ink,
     fontFamily: FONTS.bodySemiBold,
-    marginBottom: 4,
   },
-  bannerText: {
-    fontSize: 14,
-    color: '#7F1D1D',
-    fontFamily: FONTS.bodyRegular,
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  detailsButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: '#DC2626',
-    borderRadius: 6,
-  },
-  detailsButtonText: {
+  bannerSubtitle: {
     fontSize: 13,
-    fontWeight: '600',
-    color: 'white',
-    fontFamily: FONTS.bodySemiBold,
+    color: theme.muted,
+    fontFamily: FONTS.bodyRegular,
+    marginTop: 2,
   },
-  dismissButton: {
-    padding: 4,
+  dismissBtn: {
+    padding: 6,
+    marginLeft: 4,
   },
+
+  // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    width: '100%',
-    maxWidth: 500,
-    maxHeight: '90%',
+  modalSheet: {
+    backgroundColor: theme.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    paddingBottom: 34,
   },
-  modalHeader: {
+  sheetHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: theme.border,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: theme.border,
+    gap: 12,
   },
-  modalTitle: {
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: theme.canvas,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sheetTitle: {
     flex: 1,
     fontSize: 20,
     fontWeight: '700',
     color: theme.ink,
     fontFamily: FONTS.display,
   },
-  modalClose: {
-    padding: 4,
-  },
-  modalBody: {
-    padding: 20,
-  },
-  warningItem: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-    padding: 12,
+  closeBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: theme.canvas,
-    borderRadius: 12,
-  },
-  warningIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  warningContent: {
+  sheetBody: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+
+  // Rule cards
+  ruleCard: {
+    flexDirection: 'row',
+    gap: 14,
+    marginBottom: 14,
+    padding: 16,
+    backgroundColor: theme.canvas,
+    borderRadius: 14,
+  },
+  ruleIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: theme.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ruleContent: {
     flex: 1,
   },
-  warningTitle: {
+  ruleTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: theme.ink,
     fontFamily: FONTS.bodySemiBold,
     marginBottom: 4,
   },
-  warningDescription: {
-    fontSize: 13,
+  ruleText: {
+    fontSize: 14,
     color: theme.muted,
     fontFamily: FONTS.bodyRegular,
-    lineHeight: 18,
+    lineHeight: 20,
   },
-  rulesBox: {
-    backgroundColor: '#EFF6FF',
-    borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
+
+  // Checklist
+  checklistCard: {
+    backgroundColor: theme.canvas,
+    borderRadius: 14,
     padding: 16,
-    borderRadius: 8,
-    marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  rulesTitle: {
-    fontSize: 15,
+  checklistTitle: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#1E40AF',
+    color: theme.ink,
     fontFamily: FONTS.bodySemiBold,
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  ruleText: {
-    fontSize: 13,
-    color: '#1F2937',
+  checklistItem: {
+    fontSize: 14,
+    color: theme.ink,
     fontFamily: FONTS.bodyRegular,
+    paddingLeft: 12,
+    paddingVertical: 6,
+    borderLeftWidth: 2,
+    borderLeftColor: theme.accent,
     marginBottom: 6,
-    lineHeight: 18,
   },
-  consequencesBox: {
-    backgroundColor: '#FEF2F2',
-    borderLeftWidth: 4,
-    borderLeftColor: '#DC2626',
+
+  // Warning
+  warningCard: {
+    backgroundColor: theme.warnBg,
+    borderRadius: 14,
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 14,
   },
-  consequencesTitle: {
-    fontSize: 15,
+  warningTitle: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#991B1B',
+    color: theme.ink,
     fontFamily: FONTS.bodySemiBold,
-    marginBottom: 8,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  consequencesText: {
-    fontSize: 13,
-    color: '#7F1D1D',
+  warningText: {
+    fontSize: 14,
+    color: theme.ink,
     fontFamily: FONTS.bodyRegular,
-    marginBottom: 8,
-    lineHeight: 18,
+    lineHeight: 20,
   },
-  consequenceItem: {
-    fontSize: 13,
-    color: '#7F1D1D',
-    fontFamily: FONTS.bodyRegular,
-    marginBottom: 4,
-    paddingLeft: 8,
+
+  // Footer
+  sheetFooter: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    paddingBottom: 34,
+    backgroundColor: theme.surface,
+    borderTopWidth: 1,
+    borderTopColor: theme.border,
   },
-  understoodButton: {
-    backgroundColor: theme.successFg,
+  understoodBtn: {
+    backgroundColor: theme.accent,
     paddingVertical: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
   },
-  understoodButtonText: {
+  understoodText: {
     fontSize: 16,
     fontWeight: '700',
-    color: 'white',
+    color: theme.accentInk,
     fontFamily: FONTS.bodySemiBold,
   },
 });
