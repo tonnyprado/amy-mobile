@@ -15,9 +15,7 @@ export default function StatsScreen({ theme, stats }) {
     weekBars: [0, 0, 0, 0, 0, 0, 0],
     weekDays: ['L', 'M', 'M', 'J', 'V', 'S', 'D'],
     distance: '0',
-    rating: '0.0',
-    efficiency: '0',
-    income: '0',
+    timeInRoute: '0',
   };
 
   const currentStats = { ...defaultStats, ...stats };
@@ -111,34 +109,25 @@ function HeroCard({ theme, stats }) {
 }
 
 function StatGrid({ theme, stats }) {
+  // Calcular eficiencia real: entregas completadas / asignadas
+  const eficiencia = stats.assignedToday > 0
+    ? Math.round((stats.deliveriesToday / stats.assignedToday) * 100)
+    : 0;
+
   const cells = [
     {
       k: 'Distancia',
       v: stats.distance,
       u: 'km',
-      sub: '6 hr 40 min en ruta',
+      sub: `${stats.timeInRoute || '0'} hr en ruta`,
       icon: 'map',
     },
     {
-      k: 'Calificación',
-      v: stats.rating,
-      u: '/5',
-      sub: '37 reseñas esta semana',
-      icon: 'star',
-    },
-    {
       k: 'Eficiencia',
-      v: stats.efficiency,
+      v: eficiencia.toString(),
       u: '%',
-      sub: 'Optimización de ruta',
+      sub: 'Entregas completadas hoy',
       icon: 'zap',
-    },
-    {
-      k: 'Ingreso',
-      v: stats.income,
-      u: 'MXN',
-      sub: 'Acumulado de la semana',
-      icon: 'credit-card',
     },
   ];
 
