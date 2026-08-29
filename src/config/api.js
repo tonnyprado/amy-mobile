@@ -15,7 +15,7 @@ const PROD_API_URL = 'https://amy-backend-minutaapi.onrender.com'; // Render bac
 // Configuración de desarrollo:
 // - true: usar Render (HTTPS) incluso en desarrollo
 // - false: usar servidor local (HTTP) para desarrollo
-const USE_HTTPS_IN_DEV = false;
+const USE_HTTPS_IN_DEV = true;
 
 // En producción SIEMPRE usar HTTPS
 export const API_BASE_URL = __DEV__
