@@ -36,7 +36,8 @@ import {
 } from 'lucide-react-native';
 import { getTheme, FONTS } from '../theme/repartidorTheme';
 import AddressSearchModal from '../components/AddressSearchModal';
-import { registrarIntentoEntrega, obtenerDetallePedido } from '../services/repartidorApi';
+import { registrarIntentoEntrega, obtenerDetallePedido, registrarActividad, TIPO_ACTIVIDAD } from '../services/repartidorApi';
+import { useAuth } from '../contexts/AuthContext';
 import { subirMultiplesFotos } from '../services/uploadService';
 import { optimizarImagenLocal } from '../utils/fileHelpers';
 
@@ -68,6 +69,8 @@ const SUBTIPO_AVISO_OPTIONS = [
 
 export default function PaqueteDetalleScreen({ route, navigation }) {
   const { paquete: paqueteInicial, ubicacion } = route.params;
+  const { user } = useAuth();
+  const repartidorId = user?.idRepartidor || user?.id;
   const [paquete, setPaquete] = useState(paqueteInicial);
   const [nombreRecibe, setNombreRecibe] = useState(paquete.evidencias?.nombreRecibe || '');
   const [relacionRecibe, setRelacionRecibe] = useState(paquete.evidencias?.relacionRecibe || '');
@@ -106,6 +109,20 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
 
   const handleLlamar = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // Registrar actividad de llamada
+    registrarActividad({
+      repartidorId,
+      tipo: TIPO_ACTIVIDAD.LLAMADA_CONSULTORA,
+      pedidoId: paquete.id,
+      descripcion: `Llamó al teléfono ${paquete.telefono}`,
+      pedidoNumero: paquete.numeroPedido,
+      consultora: paquete.consultora,
+      latitud: ubicacion?.latitud,
+      longitud: ubicacion?.longitud,
+      metadata: { plataforma: 'mobile', telefono: paquete.telefono }
+    });
+
     Linking.openURL(`tel:${paquete.telefono}`);
   };
 
@@ -115,6 +132,25 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
       Alert.alert('Sin coordenadas', 'Este pedido no tiene coordenadas GPS.');
       return;
     }
+
+    // Registrar actividad de navegación
+    registrarActividad({
+      repartidorId,
+      tipo: TIPO_ACTIVIDAD.INICIO_NAVEGACION,
+      pedidoId: paquete.id,
+      descripcion: `Inició navegación a ${paquete.direccion || 'destino'}`,
+      pedidoNumero: paquete.numeroPedido,
+      consultora: paquete.consultora,
+      direccion: paquete.direccion,
+      latitud: ubicacion?.latitud,
+      longitud: ubicacion?.longitud,
+      metadata: {
+        plataforma: 'mobile',
+        destinoLat: paquete.latitud,
+        destinoLng: paquete.longitud
+      }
+    });
+
     const url = Platform.OS === 'ios'
       ? `maps://app?daddr=${paquete.latitud},${paquete.longitud}`
       : `google.navigation:q=${paquete.latitud},${paquete.longitud}`;
@@ -296,6 +332,32 @@ export default function PaqueteDetalleScreen({ route, navigation }) {
                 firmaUrl: null,
                 nombreReceptor: nombreRecibe || null,
                 recibidoPor: relacionRecibe || null
+              });
+
+              // Registrar actividad de entrega
+              const tipoActividad = nuevoEstado === 'ENTREGADO'
+                ? TIPO_ACTIVIDAD.ENTREGA_EXITOSA
+                : TIPO_ACTIVIDAD.ENTREGA_FALLIDA;
+
+              registrarActividad({
+                repartidorId,
+                tipo: tipoActividad,
+                pedidoId: paquete.id,
+                descripcion: nuevoEstado === 'ENTREGADO'
+                  ? `Entrega exitosa a ${nombreRecibe} (${relacionRecibe})`
+                  : `No entregado: ${motivoNoEntrega}`,
+                pedidoNumero: paquete.numeroPedido,
+                consultora: paquete.consultora,
+                direccion: paquete.direccion,
+                latitud: ubicacion?.latitud,
+                longitud: ubicacion?.longitud,
+                metadata: {
+                  plataforma: 'mobile',
+                  receptor: nombreRecibe,
+                  relacionReceptor: relacionRecibe,
+                  tipoAnomalia,
+                  cantidadFotos: fotos.length
+                }
               });
 
               await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

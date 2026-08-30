@@ -249,6 +249,90 @@ export async function obtenerIntentosEntrega(pedidoId) {
 }
 
 // ============================================================================
+// LOG DE ACTIVIDADES
+// ============================================================================
+
+/**
+ * Registra una actividad del repartidor para el log de monitoreo
+ * @param {Object} actividad
+ * @param {string} actividad.repartidorId - ID del repartidor
+ * @param {string} actividad.tipo - Tipo de actividad (INICIO_RECORRIDO, ENTREGA_EXITOSA, etc.)
+ * @param {number} actividad.pedidoId - ID del pedido (opcional)
+ * @param {string} actividad.descripcion - Descripción de la actividad
+ * @param {string} actividad.pedidoNumero - Número de pedido (opcional)
+ * @param {string} actividad.consultora - Número de consultora (opcional)
+ * @param {string} actividad.direccion - Dirección (opcional)
+ * @param {number} actividad.latitud - Latitud GPS (opcional)
+ * @param {number} actividad.longitud - Longitud GPS (opcional)
+ * @param {Object} actividad.metadata - Datos adicionales (opcional)
+ * @returns {Promise<Object>}
+ */
+export async function registrarActividad(actividad) {
+  try {
+    const response = await apiClient.post('/api/actividades', {
+      repartidorId: actividad.repartidorId,
+      tipo: actividad.tipo,
+      pedidoId: actividad.pedidoId || null,
+      descripcion: actividad.descripcion || null,
+      pedidoNumero: actividad.pedidoNumero || null,
+      consultora: actividad.consultora || null,
+      direccion: actividad.direccion || null,
+      latitud: actividad.latitud || null,
+      longitud: actividad.longitud || null,
+      duracionSegundos: actividad.duracionSegundos || null,
+      metadata: actividad.metadata || null
+    });
+
+    if (!response.ok) {
+      console.warn('Error al registrar actividad:', response.status);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    // Errores de actividad no deben interrumpir el flujo principal
+    console.warn('Error al registrar actividad (no crítico):', error.message);
+    return null;
+  }
+}
+
+/**
+ * Tipos de actividad disponibles
+ */
+export const TIPO_ACTIVIDAD = {
+  // Recorrido
+  INICIO_RECORRIDO: 'INICIO_RECORRIDO',
+  FIN_RECORRIDO: 'FIN_RECORRIDO',
+  PAUSA_RECORRIDO: 'PAUSA_RECORRIDO',
+  REANUDA_RECORRIDO: 'REANUDA_RECORRIDO',
+  // Navegación
+  INICIO_NAVEGACION: 'INICIO_NAVEGACION',
+  FIN_NAVEGACION: 'FIN_NAVEGACION',
+  CAMBIO_DESTINO: 'CAMBIO_DESTINO',
+  // Entregas
+  INTENTO_ENTREGA: 'INTENTO_ENTREGA',
+  ENTREGA_EXITOSA: 'ENTREGA_EXITOSA',
+  ENTREGA_FALLIDA: 'ENTREGA_FALLIDA',
+  FOTO_EVIDENCIA: 'FOTO_EVIDENCIA',
+  FIRMA_CAPTURADA: 'FIRMA_CAPTURADA',
+  // Comunicación
+  LLAMADA_CONSULTORA: 'LLAMADA_CONSULTORA',
+  MENSAJE_CONSULTORA: 'MENSAJE_CONSULTORA',
+  MENSAJE_ADMIN: 'MENSAJE_ADMIN',
+  // App
+  LOGIN: 'LOGIN',
+  LOGOUT: 'LOGOUT',
+  APP_ABIERTA: 'APP_ABIERTA',
+  APP_CERRADA: 'APP_CERRADA',
+  UBICACION_ACTUALIZADA: 'UBICACION_ACTUALIZADA',
+  // Pedidos
+  VER_PEDIDO: 'VER_PEDIDO',
+  ESCANEAR_CODIGO: 'ESCANEAR_CODIGO',
+  MARCAR_PROBLEMA: 'MARCAR_PROBLEMA',
+  NOTA_AGREGADA: 'NOTA_AGREGADA'
+};
+
+// ============================================================================
 // HELPERS
 // ============================================================================
 
@@ -346,6 +430,10 @@ export default {
   // Intentos
   registrarIntentoEntrega,
   obtenerIntentosEntrega,
+
+  // Actividades
+  registrarActividad,
+  TIPO_ACTIVIDAD,
 
   // Helpers
   mapearEstadoBackend,
