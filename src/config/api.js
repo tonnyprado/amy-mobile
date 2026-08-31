@@ -22,9 +22,10 @@ export const API_BASE_URL = __DEV__
   ? (USE_HTTPS_IN_DEV ? DEV_API_URL_RENDER : DEV_API_URL_LOCAL)
   : PROD_API_URL;
 
-// Timeout para peticiones (3 segundos para datos, 10 segundos para auth)
-const REQUEST_TIMEOUT = 3000;
-const AUTH_TIMEOUT = 10000;
+// Timeout para peticiones
+const REQUEST_TIMEOUT = 5000;  // 5 segundos para peticiones normales
+const AUTH_TIMEOUT = 10000;    // 10 segundos para auth
+const WRITE_TIMEOUT = 8000;    // 8 segundos para escrituras (actividades, intentos)
 
 function isFormDataBody(body) {
   return typeof FormData !== 'undefined' && body instanceof FormData;
@@ -79,9 +80,14 @@ export const apiClient = {
       }
     }
 
-    // Usar timeout más largo para autenticación (10s) y normal para otros (3s)
+    // Determinar timeout según tipo de endpoint
     const isAuthEndpoint = endpoint.includes('/login') || endpoint.includes('/auth');
-    const timeout = isAuthEndpoint ? AUTH_TIMEOUT : REQUEST_TIMEOUT;
+    const isWriteEndpoint = endpoint.includes('/actividades') ||
+                            endpoint.includes('/intento-entrega') ||
+                            endpoint.includes('/recorrido');
+    const timeout = isAuthEndpoint ? AUTH_TIMEOUT :
+                    isWriteEndpoint ? WRITE_TIMEOUT :
+                    REQUEST_TIMEOUT;
 
     return fetchWithTimeout(url, options, timeout);
   },

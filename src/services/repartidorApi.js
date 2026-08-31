@@ -267,33 +267,49 @@ export async function obtenerIntentosEntrega(pedidoId) {
  * @param {Object} actividad.metadata - Datos adicionales (opcional)
  * @returns {Promise<Object>}
  */
-export async function registrarActividad(actividad) {
-  try {
-    const response = await apiClient.post('/api/actividades', {
-      repartidorId: actividad.repartidorId,
-      tipo: actividad.tipo,
-      pedidoId: actividad.pedidoId || null,
-      descripcion: actividad.descripcion || null,
-      pedidoNumero: actividad.pedidoNumero || null,
-      consultora: actividad.consultora || null,
-      direccion: actividad.direccion || null,
-      latitud: actividad.latitud || null,
-      longitud: actividad.longitud || null,
-      duracionSegundos: actividad.duracionSegundos || null,
-      metadata: actividad.metadata || null
-    });
+export async function registrarActividad(actividad, reintentos = 2) {
+  const payload = {
+    repartidorId: actividad.repartidorId,
+    tipo: actividad.tipo,
+    pedidoId: actividad.pedidoId || null,
+    descripcion: actividad.descripcion || null,
+    pedidoNumero: actividad.pedidoNumero || null,
+    consultora: actividad.consultora || null,
+    direccion: actividad.direccion || null,
+    latitud: actividad.latitud || null,
+    longitud: actividad.longitud || null,
+    duracionSegundos: actividad.duracionSegundos || null,
+    metadata: actividad.metadata || null
+  };
 
-    if (!response.ok) {
-      console.warn('Error al registrar actividad:', response.status);
+  for (let intento = 0; intento <= reintentos; intento++) {
+    try {
+      const response = await apiClient.post('/api/actividades', payload);
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Sin detalle');
+        console.warn(`[ACTIVIDAD] Error HTTP ${response.status}: ${errorText}`);
+        if (intento < reintentos) {
+          console.log(`[ACTIVIDAD] Reintentando (${intento + 1}/${reintentos})...`);
+          await new Promise(r => setTimeout(r, 1000 * (intento + 1)));
+          continue;
+        }
+        return null;
+      }
+
+      const result = await response.json();
+      console.log(`[ACTIVIDAD] Registrada: ${actividad.tipo}`);
+      return result;
+    } catch (error) {
+      console.warn(`[ACTIVIDAD] Error intento ${intento + 1}:`, error.message);
+      if (intento < reintentos) {
+        await new Promise(r => setTimeout(r, 1000 * (intento + 1)));
+        continue;
+      }
       return null;
     }
-
-    return await response.json();
-  } catch (error) {
-    // Errores de actividad no deben interrumpir el flujo principal
-    console.warn('Error al registrar actividad (no crítico):', error.message);
-    return null;
   }
+  return null;
 }
 
 /**
