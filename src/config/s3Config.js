@@ -28,32 +28,29 @@ export const S3_CONFIG = {
   // Prefijos para organizar archivos en S3
   prefixes: {
     fotos: 'evidencias/fotos/',
-    firmas: 'evidencias/firmas/',
   },
 
   // Tamaños máximos permitidos
   maxSizes: {
     foto: 5 * 1024 * 1024,  // 5 MB
-    firma: 1 * 1024 * 1024,  // 1 MB
   },
 
   // Formatos permitidos
   allowedFormats: {
     foto: ['image/jpeg', 'image/jpg', 'image/png'],
-    firma: ['image/png'],
   },
 };
 
 /**
  * Genera un nombre de archivo único para S3
- * @param {string} tipo - 'foto' o 'firma'
+ * @param {string} tipo - 'fotos'
  * @param {number} pedidoId - ID del pedido
  * @returns {string} Nombre de archivo único
  */
 export function generarNombreArchivoS3(tipo, pedidoId) {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
-  return `${S3_CONFIG.prefixes[tipo]}pedido-${pedidoId}-${tipo}-${timestamp}-${random}.png`;
+  return `${S3_CONFIG.prefixes[tipo] || 'evidencias/'}pedido-${pedidoId}-${tipo}-${timestamp}-${random}.jpg`;
 }
 
 /**

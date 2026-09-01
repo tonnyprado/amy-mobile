@@ -200,7 +200,6 @@ export async function obtenerRecorridoActivo(idRepartidor) {
  * @param {string} intento.fotoMapaUrl - Foto del mapa/ubicacion
  * @param {string} intento.fotoLlamadaUrl - Foto de evidencia de llamada
  * @param {string} intento.mensajesAdicionales - Mensajes adicionales enviados
- * @param {string} intento.firmaUrl
  * @param {string} intento.observaciones
  * @param {string} intento.nombreReceptor - Nombre de quien recibe
  * @param {string} intento.recibidoPor - TITULAR, CONSULTORA, FAMILIAR, LIDER, GZ, VECINO
@@ -219,7 +218,6 @@ export async function registrarIntentoEntrega(intento) {
     fotoMapaUrl: intento.fotoMapaUrl || null,
     fotoLlamadaUrl: intento.fotoLlamadaUrl || null,
     mensajesAdicionales: intento.mensajesAdicionales || null,
-    firmaUrl: intento.firmaUrl || null,
     observaciones: intento.observaciones || null,
     nombreReceptor: intento.nombreReceptor || null,
     recibidoPor: intento.recibidoPor || null
@@ -330,7 +328,6 @@ export const TIPO_ACTIVIDAD = {
   ENTREGA_EXITOSA: 'ENTREGA_EXITOSA',
   ENTREGA_FALLIDA: 'ENTREGA_FALLIDA',
   FOTO_EVIDENCIA: 'FOTO_EVIDENCIA',
-  FIRMA_CAPTURADA: 'FIRMA_CAPTURADA',
   // Comunicación
   LLAMADA_CONSULTORA: 'LLAMADA_CONSULTORA',
   MENSAJE_CONSULTORA: 'MENSAJE_CONSULTORA',
@@ -421,7 +418,6 @@ export function convertirPedidoBackend(pedidoBackend) {
       notasEntrega: pedidoBackend.observaciones || '',
       motivoNoEntrega: pedidoBackend.descripcionNoEntrega || '',
       boletaTomada: false,
-      firma: pedidoBackend.firmaUrl || '',
       ultimaActualizacion: pedidoBackend.fechaActualizacion || null
     }
   };

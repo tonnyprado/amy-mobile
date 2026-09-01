@@ -1,7 +1,7 @@
 /**
  * Servicio de upload de archivos a S3
  *
- * Este servicio maneja el upload de fotos y firmas a S3.
+ * Este servicio maneja el upload de fotos a S3.
  * Incluye un fallback a base64 cuando S3 está deshabilitado.
  */
 
@@ -85,76 +85,6 @@ export async function subirFotoEvidencia({ dataURI, pedidoId }) {
 }
 
 /**
- * Sube una firma digital
- *
- * @param {Object} params
- * @param {string} params.dataURI - Firma en base64
- * @param {number} params.pedidoId - ID del pedido
- * @returns {Promise<string>} URL de la firma (S3 o base64)
- */
-export async function subirFirma({ dataURI, pedidoId }) {
-  // Si S3 está deshabilitado, retornar base64 directamente
-  if (!S3_ENABLED) {
-    console.log('[UPLOAD] S3 deshabilitado, usando base64 para firma');
-    return dataURI;
-  }
-
-  try {
-    // Validar archivo
-    const { blob, mimeType, size } = dataURItoBlob(dataURI);
-
-    if (!validarFormatoArchivo(mimeType, S3_CONFIG.allowedFormats.firma)) {
-      throw new Error(`Formato no permitido. Usa: ${S3_CONFIG.allowedFormats.firma.join(', ')}`);
-    }
-
-    if (!validarTamanoArchivo(size, S3_CONFIG.maxSizes.firma)) {
-      throw new Error(
-        `Archivo muy grande (${formatearTamano(size)}). Máximo: ${formatearTamano(S3_CONFIG.maxSizes.firma)}`
-      );
-    }
-
-    // Generar nombre único
-    const fileName = generarNombreArchivoS3('firmas', pedidoId);
-
-    // Crear FormData para el upload
-    const formData = new FormData();
-    formData.append('file', {
-      uri: dataURI,
-      type: mimeType,
-      name: fileName,
-    });
-    formData.append('pedidoId', pedidoId.toString());
-    formData.append('tipo', 'firma');
-
-    // Subir a S3 a través del backend
-    const response = await apiClient.post(S3_CONFIG.uploadEndpoint, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Error al subir firma a S3');
-    }
-
-    const data = await response.json();
-
-    // El backend debe retornar { url: "https://s3..." }
-    if (!data.url) {
-      throw new Error('Backend no retornó URL de S3');
-    }
-
-    console.log('[UPLOAD] Firma subida a S3:', data.url);
-    return data.url;
-  } catch (error) {
-    console.error('[UPLOAD] Error al subir firma a S3:', error);
-    // Fallback a base64 si hay error
-    console.warn('[UPLOAD] Usando base64 como fallback');
-    return dataURI;
-  }
-}
-
-/**
  * Sube múltiples fotos de evidencia
  *
  * @param {Object} params
@@ -194,6 +124,5 @@ export async function subirMultiplesFotos({ fotos, pedidoId }) {
 
 export default {
   subirFotoEvidencia,
-  subirFirma,
   subirMultiplesFotos,
 };
