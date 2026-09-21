@@ -20,7 +20,7 @@ export const S3_CONFIG = {
   uploadEndpoint: '/api/archivos/evidencias',
 
   // Bucket de S3 (configurar en backend)
-  bucket: 'amy-delivery-evidencias',
+  bucket: 'mendiola-evidencias',
 
   // Región de AWS (configurar en backend)
   region: 'us-east-1',

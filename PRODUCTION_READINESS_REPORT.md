@@ -1,4 +1,4 @@
-# 📱 AMY Delivery - Reporte de Preparación para Producción
+# 📱 Mendiola Logistics - Reporte de Preparación para Producción
 
 **Fecha:** 21 de septiembre de 2026
 **Versión:** 1.0.0
@@ -8,7 +8,7 @@
 
 ## 🎯 Resumen Ejecutivo
 
-La aplicación móvil **AMY Delivery** ha sido preparada completamente para su publicación en **Google Play Store** y **Apple App Store**. Se implementaron todas las configuraciones necesarias, mejoras de seguridad, documentación legal, y optimizaciones cross-platform.
+La aplicación móvil **Mendiola Logistics** ha sido preparada completamente para su publicación en **Google Play Store** y **Apple App Store**. Se implementaron todas las configuraciones necesarias, mejoras de seguridad, documentación legal, y optimizaciones cross-platform.
 
 ### Score de Preparación
 

@@ -14,8 +14,8 @@ const IS_PROD = process.env.APP_ENV === 'production';
 
 export default {
   expo: {
-    name: 'AMY Delivery',
-    slug: 'amy-delivery',
+    name: 'Mendiola Logistics',
+    slug: 'mendiola-logistics',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
@@ -29,7 +29,7 @@ export default {
 
     ios: {
       supportsTablet: false,
-      bundleIdentifier: 'com.amybusiness.delivery',
+      bundleIdentifier: 'com.mendiolalogistics.delivery',
       deploymentTarget: '15.1',
 
       config: {
@@ -37,11 +37,11 @@ export default {
       },
 
       infoPlist: {
-        NSLocationWhenInUseUsageDescription: 'AMY Delivery necesita tu ubicación para rastrear entregas en tiempo real.',
-        NSLocationAlwaysAndWhenInUseUsageDescription: 'AMY Delivery necesita tu ubicación en segundo plano para rastrear entregas.',
-        NSCameraUsageDescription: 'AMY Delivery necesita acceso a la cámara para escanear etiquetas de cajas y tomar fotos de evidencia.',
+        NSLocationWhenInUseUsageDescription: 'Mendiola Logistics necesita tu ubicación para rastrear entregas en tiempo real.',
+        NSLocationAlwaysAndWhenInUseUsageDescription: 'Mendiola Logistics necesita tu ubicación en segundo plano para rastrear entregas.',
+        NSCameraUsageDescription: 'Mendiola Logistics necesita acceso a la cámara para escanear etiquetas de cajas y tomar fotos de evidencia.',
         NSPhotoLibraryUsageDescription: 'Se requiere acceso a la galería para seleccionar fotos de evidencia.',
-        NSMicrophoneUsageDescription: 'AMY Delivery necesita acceso al micrófono para reconocimiento de voz.',
+        NSMicrophoneUsageDescription: 'Mendiola Logistics necesita acceso al micrófono para reconocimiento de voz.',
         ITSAppUsesNonExemptEncryption: false,
         UIBackgroundModes: ['location']
       }
@@ -54,7 +54,7 @@ export default {
         }
       },
 
-      package: 'com.amybusiness.delivery',
+      package: 'com.mendiolalogistics.delivery',
       versionCode: 1,
 
       adaptiveIcon: {
@@ -84,8 +84,8 @@ export default {
       [
         'expo-location',
         {
-          locationAlwaysAndWhenInUsePermission: 'AMY Delivery necesita tu ubicación para rastrear entregas en tiempo real.',
-          locationWhenInUsePermission: 'AMY Delivery necesita tu ubicación para rastrear entregas.',
+          locationAlwaysAndWhenInUsePermission: 'Mendiola Logistics necesita tu ubicación para rastrear entregas en tiempo real.',
+          locationWhenInUsePermission: 'Mendiola Logistics necesita tu ubicación para rastrear entregas.',
           isAndroidBackgroundLocationEnabled: true,
           isAndroidForegroundServiceEnabled: true
         }
@@ -93,13 +93,13 @@ export default {
       [
         'expo-camera',
         {
-          cameraPermission: 'Permite a AMY Delivery usar la cámara para tomar fotos de evidencia.'
+          cameraPermission: 'Permite a Mendiola Logistics usar la cámara para tomar fotos de evidencia.'
         }
       ],
       [
         'expo-image-picker',
         {
-          photosPermission: 'Permite a AMY Delivery acceder a tu galería para seleccionar fotos.'
+          photosPermission: 'Permite a Mendiola Logistics acceder a tu galería para seleccionar fotos.'
         }
       ],
       [

@@ -73,7 +73,7 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.logoContainer}>
             <Van size={56} color={theme.colors.textOnPrimary} strokeWidth={2.5} />
           </View>
-          <Text style={styles.title}>AMY Delivery</Text>
+          <Text style={styles.title}>Mendiola Logistics</Text>
           <Text style={styles.subtitle}>Portal de Repartidores y Administradores</Text>
         </View>
 
@@ -114,7 +114,7 @@ export default function LoginScreen({ navigation }) {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Versión 1.0.0 • AMY Business Platform
+            Versión 1.0.0 • Mendiola Logistics Platform
           </Text>
         </View>
       </ScrollView>

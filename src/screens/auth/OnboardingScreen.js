@@ -83,7 +83,7 @@ export default function OnboardingScreen({
                 letterSpacing: -0.2,
               }}
             >
-              AMY
+              Mendiola Logistics
             </Text>
           </View>
         )}

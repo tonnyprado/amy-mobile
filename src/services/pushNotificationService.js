@@ -25,7 +25,7 @@ async function ensureNotificationChannel() {
   }
 
   await Notifications.setNotificationChannelAsync('default', {
-    name: 'Notificaciones AMY',
+    name: 'Notificaciones Mendiola',
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#ea580c',

@@ -1,4 +1,4 @@
-# Arquitectura - AMY Delivery App
+# Arquitectura - Mendiola Logistics App
 
 Documentación de la arquitectura y componentes de la aplicación.
 

@@ -1,5 +1,5 @@
 // src/screens/auth/components/TruckMark.js
-// Logo de AMY Delivery — square con gradiente del accent + ícono de camión.
+// Logo de Mendiola Logistics — square con gradiente del accent + ícono de camión.
 // Se usa tanto en el onboarding como en el header del login.
 
 import React from 'react';

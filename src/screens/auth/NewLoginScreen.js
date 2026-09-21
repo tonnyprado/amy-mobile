@@ -132,7 +132,7 @@ export default function NewLoginScreen({
                 letterSpacing: -0.1,
               }}
             >
-              AMY Delivery
+              Mendiola Logistics
             </Text>
           </View>
         </View>
@@ -376,7 +376,7 @@ export default function NewLoginScreen({
               letterSpacing: 0.2,
             }}
           >
-            Versión 1.0.0 · AMY Business Platform
+            Versión 1.0.0 · Mendiola Logistics Platform
           </Text>
 
           {/* Legal Links */}

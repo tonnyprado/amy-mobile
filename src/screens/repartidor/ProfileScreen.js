@@ -219,7 +219,7 @@ export default function ProfileScreen({ route, navigation }) {
 
         {/* Footer */}
         <Text style={[styles.version, { color: theme.ink }]}>
-          AMY Delivery v1.0.0
+          Mendiola Logistics v1.0.0
         </Text>
       </ScrollView>
     </SectionShell>

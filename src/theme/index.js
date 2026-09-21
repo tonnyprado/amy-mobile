@@ -1,5 +1,5 @@
 /**
- * Sistema de diseño Amy Mobile
+ * Sistema de diseño Mendiola Logistics Mobile
  * Paleta de colores: Violeta + Rojo + Fondos Claros
  * Inspirado en diseños modernos de delivery/tracking apps
  */

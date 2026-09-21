@@ -80,7 +80,7 @@ Pantalla actualizada para usar el servicio:
 #### 1.1. Crear bucket en AWS S3
 ```bash
 # En AWS Console o CLI
-aws s3 mb s3://amy-delivery-evidencias --region us-east-1
+aws s3 mb s3://mendiola-evidencias --region us-east-1
 ```
 
 #### 1.2. Configurar políticas del bucket
@@ -93,7 +93,7 @@ aws s3 mb s3://amy-delivery-evidencias --region us-east-1
       "Effect": "Allow",
       "Principal": "*",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::amy-delivery-evidencias/*"
+      "Resource": "arn:aws:s3:::mendiola-evidencias/*"
     }
   ]
 }
@@ -145,7 +145,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 
     // Subir a S3
     const params = {
-      Bucket: 'amy-delivery-evidencias',
+      Bucket: 'mendiola-evidencias',
       Key: key,
       Body: file.buffer,
       ContentType: file.mimetype,
@@ -168,7 +168,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
 AWS_ACCESS_KEY_ID=AKIA...
 AWS_SECRET_ACCESS_KEY=...
 AWS_REGION=us-east-1
-AWS_S3_BUCKET=amy-delivery-evidencias
+AWS_S3_BUCKET=mendiola-evidencias
 ```
 
 ### 📌 Paso 3: Base de datos - Preparar columnas
@@ -198,7 +198,7 @@ export const S3_ENABLED = true; // ← Cambiar de false a true
 // src/config/s3Config.js
 export const S3_CONFIG = {
   uploadEndpoint: '/api/upload', // ← Verificar que coincida con tu backend
-  bucket: 'amy-delivery-evidencias',
+  bucket: 'mendiola-evidencias',
   region: 'us-east-1',
   // ... resto de configuración
 };
@@ -214,7 +214,7 @@ export const S3_CONFIG = {
 5. Verificar logs en consola:
    ```
    [UPLOAD] S3 habilitado, subiendo firma...
-   [UPLOAD] Firma subida a S3: https://amy-delivery-evidencias.s3...
+   [UPLOAD] Firma subida a S3: https://mendiola-evidencias.s3...
    ```
 6. Verificar en BD que `firmaUrl` contenga una URL, no base64
 
@@ -224,7 +224,7 @@ export const S3_CONFIG = {
 3. Verificar logs similares
 
 #### 5.3. Verificar en AWS Console
-- Ir a S3 → `amy-delivery-evidencias`
+- Ir a S3 → `mendiola-evidencias`
 - Verificar que existan carpetas: `evidencias/fotos/` y `evidencias/firmas/`
 - Verificar que las imágenes sean accesibles públicamente
 

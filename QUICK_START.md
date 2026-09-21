@@ -1,4 +1,4 @@
-# Quick Start - AMY Delivery App
+# Quick Start - Mendiola Logistics App
 
 Guía rápida para empezar a desarrollar en minutos.
 

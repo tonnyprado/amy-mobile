@@ -50,7 +50,7 @@ export default function Splash({ hidden, onHidden }) {
   return (
     <Animated.View style={[styles.splash, { opacity }]}>
       <Animated.View style={[styles.logoContainer, { transform: [{ scale }] }]}>
-        <Text style={styles.logo}>AMY</Text>
+        <Text style={styles.logo}>Mendiola</Text>
         <Text style={styles.subtitle}>Panel Administrativo</Text>
       </Animated.View>
     </Animated.View>

@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # ========================================
-# AMY Delivery - Comandos Rápidos
+# Mendiola Logistics - Comandos Rápidos
 # ========================================
 # Script con todos los comandos necesarios para publicar la app
 # Copia y pega estos comandos en tu terminal
 
-echo "🚀 AMY Delivery - Quick Start Guide"
+echo "🚀 Mendiola Logistics - Quick Start Guide"
 echo "===================================="
 echo ""
 

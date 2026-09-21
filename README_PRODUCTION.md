@@ -1,8 +1,8 @@
-# AMY Delivery - App Móvil Nativa 📱
+# Mendiola Logistics - App Móvil Nativa 📱
 
 <div align="center">
   <h3>Control de Entregas en Tiempo Real</h3>
-  <p>App móvil para repartidores y administradores de AMY Business Platform</p>
+  <p>App móvil para repartidores y administradores de Mendiola Logistics Platform</p>
 
   ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
   ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)

@@ -1,5 +1,5 @@
 /**
- * Utilidades de seguridad de red para AMY Mobile
+ * Utilidades de seguridad de red para Mendiola Logistics Mobile
  *
  * NOTA: Certificate pinning completo requiere un Expo Development Build
  * con código nativo. Esta implementación proporciona validaciones

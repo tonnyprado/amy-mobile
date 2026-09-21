@@ -161,7 +161,7 @@ export default function SettingsScreen({ visible, onClose, user, onLogout }) {
             </TouchableOpacity>
 
             {/* Footer */}
-            <Text style={styles.version}>AMY Admin Panel v1.0.0</Text>
+            <Text style={styles.version}>Mendiola Logistics Admin v1.0.0</Text>
           </ScrollView>
         </SectionShell>
       </Animated.View>

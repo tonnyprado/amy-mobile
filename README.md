@@ -1,6 +1,6 @@
-# AMY Delivery - App Móvil para Repartidores
+# Mendiola Logistics - App Móvil para Repartidores
 
-App móvil nativa (Android) para repartidores de AMY Business Platform. Desarrollada con Expo y React Native.
+App móvil nativa (Android) para repartidores de Mendiola Logistics Platform. Desarrollada con Expo y React Native.
 
 ## Características
 
@@ -264,4 +264,4 @@ Para reportar bugs o solicitar features, crear un issue en el repositorio.
 
 ## Licencia
 
-Propietario - AMY Business Platform © 2026
+Propietario - Mendiola Logistics Platform © 2026

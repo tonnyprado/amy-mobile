@@ -1,4 +1,4 @@
-# Guía Completa: Build y Publicación de AMY Delivery
+# Guía Completa: Build y Publicación de Mendiola Logistics
 
 Esta guía te llevará paso a paso desde configurar tu entorno hasta publicar la app en Play Store y App Store.
 
