@@ -2,7 +2,7 @@
 // Formulario de credenciales con TextInputs simples
 
 import React, { useState, useCallback, memo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, TextInput, Linking } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { LOTTIE_LOGIN } from './slides.js';
@@ -378,6 +378,48 @@ export default function NewLoginScreen({
           >
             Versión 1.0.0 · AMY Business Platform
           </Text>
+
+          {/* Legal Links */}
+          <View
+            style={{
+              flexDirection: 'row',
+              marginTop: 12,
+              gap: 12,
+              alignItems: 'center',
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => Linking.openURL('https://mendiolalogistics.com/privacy-policy')}
+            >
+              <Text
+                style={{
+                  fontFamily: 'Manrope_600SemiBold',
+                  fontSize: 10.5,
+                  color: theme.muted,
+                  textDecorationLine: 'underline',
+                }}
+              >
+                Privacidad
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={{ color: theme.muted, fontSize: 10 }}>•</Text>
+
+            <TouchableOpacity
+              onPress={() => Linking.openURL('https://mendiolalogistics.com/terms-of-service')}
+            >
+              <Text
+                style={{
+                  fontFamily: 'Manrope_600SemiBold',
+                  fontSize: 10.5,
+                  color: theme.muted,
+                  textDecorationLine: 'underline',
+                }}
+              >
+                Términos
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
           </View>
         </ScrollView>

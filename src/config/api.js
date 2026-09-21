@@ -1,26 +1,51 @@
 /**
  * Configuración centralizada de la API para móvil
  *
- * IMPORTANTE: En producción, configurar API_BASE_URL con tu servidor
+ * IMPORTANTE: La URL del backend se configura desde app.config.js usando variables de entorno
  */
 
+import Constants from 'expo-constants';
 import { getToken } from '../utils/secureStorage';
 import { validateRequestUrl } from '../utils/networkSecurity';
 
-// Base URL de la API - configurar según entorno
-const DEV_API_URL_LOCAL = 'http://192.168.0.14:8080'; // Tu IP local + puerto del backend
-const DEV_API_URL_RENDER = 'https://amy-backend-minutaapi.onrender.com'; // Render backend (HTTPS)
-const PROD_API_URL = 'https://amy-backend-minutaapi.onrender.com'; // Render backend
+// Obtener configuración desde app.config.js (extra)
+const APP_ENV = Constants.expoConfig?.extra?.APP_ENV || 'development';
+const API_BASE_URL_FROM_CONFIG = Constants.expoConfig?.extra?.API_BASE_URL;
 
-// Configuración de desarrollo:
-// - true: usar Render (HTTPS) incluso en desarrollo
-// - false: usar servidor local (HTTP) para desarrollo
-const USE_HTTPS_IN_DEV = true;
+// Fallbacks por entorno (en caso de que no esté configurado en extra)
+const DEV_API_URL_LOCAL = 'http://192.168.0.14:8080';
+const DEV_API_URL_RENDER = 'https://amy-backend-minutaapi.onrender.com';
+const STAGING_API_URL = 'https://amy-backend-staging.onrender.com';
+const PROD_API_URL = 'https://amy-backend-minutaapi.onrender.com';
 
-// En producción SIEMPRE usar HTTPS
-export const API_BASE_URL = __DEV__
-  ? (USE_HTTPS_IN_DEV ? DEV_API_URL_RENDER : DEV_API_URL_LOCAL)
-  : PROD_API_URL;
+// Determinar URL según entorno
+const getApiBaseUrl = () => {
+  // Si está configurado en app.config.js, usarlo
+  if (API_BASE_URL_FROM_CONFIG) {
+    return API_BASE_URL_FROM_CONFIG;
+  }
+
+  // Fallback según entorno
+  if (APP_ENV === 'production') {
+    return PROD_API_URL;
+  } else if (APP_ENV === 'staging') {
+    return STAGING_API_URL;
+  } else {
+    // Desarrollo: usar HTTPS por defecto (más seguro)
+    return __DEV__ ? DEV_API_URL_RENDER : PROD_API_URL;
+  }
+};
+
+// Base URL de la API
+export const API_BASE_URL = getApiBaseUrl();
+
+// Log de configuración en desarrollo
+if (__DEV__) {
+  console.log('=== API Configuration ===');
+  console.log('Environment:', APP_ENV);
+  console.log('API Base URL:', API_BASE_URL);
+  console.log('=======================');
+}
 
 // Timeout para peticiones
 const REQUEST_TIMEOUT = 5000;  // 5 segundos para peticiones normales

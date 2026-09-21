@@ -185,20 +185,26 @@ export default function ProfileScreen({ route, navigation }) {
           })}
         </View>
 
-        {/* Dispositivo */}
-        {repartidor?.sistemaOperativo && (
-          <View style={[styles.deviceCard, { backgroundColor: theme.canvas }]}>
-            <Text style={[styles.deviceLabel, { color: theme.muted }]}>DISPOSITIVO</Text>
-            <View style={[
-              styles.deviceBadge,
-              { backgroundColor: repartidor.sistemaOperativo === 'IOS' ? theme.ink : '#10B981' }
-            ]}>
-              <Text style={styles.deviceBadgeText}>
-                {repartidor.sistemaOperativo === 'IOS' ? 'iPhone' : 'Android'}
-              </Text>
-            </View>
-          </View>
-        )}
+        {/* Legal Links */}
+        <View style={[styles.legalContainer, { backgroundColor: theme.canvas }]}>
+          <TouchableOpacity
+            style={styles.legalLink}
+            onPress={() => Linking.openURL('https://mendiolalogistics.com/privacy-policy')}
+          >
+            <Icon name="shield" size={14} color={theme.muted} />
+            <Text style={[styles.legalText, { color: theme.muted }]}>Política de Privacidad</Text>
+          </TouchableOpacity>
+
+          <View style={[styles.legalSeparator, { backgroundColor: theme.border }]} />
+
+          <TouchableOpacity
+            style={styles.legalLink}
+            onPress={() => Linking.openURL('https://mendiolalogistics.com/terms-of-service')}
+          >
+            <Icon name="file-text" size={14} color={theme.muted} />
+            <Text style={[styles.legalText, { color: theme.muted }]}>Términos de Servicio</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Boton de cerrar sesion */}
         <TouchableOpacity
@@ -363,35 +369,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.5,
   },
-  deviceCard: {
+  legalContainer: {
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
   },
-  deviceLabel: {
+  legalLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 4,
+  },
+  legalText: {
     fontSize: 11,
-    fontFamily: FONTS.bodyBold,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+    fontFamily: FONTS.bodySemiBold,
+    textDecorationLine: 'underline',
   },
-  deviceBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  deviceBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    fontFamily: FONTS.bodyBold,
+  legalSeparator: {
+    width: 1,
+    height: 16,
+    opacity: 0.3,
   },
   logoutButton: {
     flexDirection: 'row',

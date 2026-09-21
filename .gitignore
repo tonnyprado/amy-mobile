@@ -31,7 +31,18 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
+.env.development
+.env.staging
+.env.production
+
+# Google service account (para submit a Play Store)
+google-service-account.json
+
+# Apple certificates y provisioning profiles
+*.cer
+*.certSigningRequest
 
 # typescript
 *.tsbuildinfo
