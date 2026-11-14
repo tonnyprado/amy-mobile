@@ -39,13 +39,13 @@ const getApiBaseUrl = () => {
 // Base URL de la API
 export const API_BASE_URL = getApiBaseUrl();
 
-// Log de configuración en desarrollo
-if (__DEV__) {
-  console.log('=== API Configuration ===');
-  console.log('Environment:', APP_ENV);
-  console.log('API Base URL:', API_BASE_URL);
-  console.log('=======================');
-}
+// Log de configuración (siempre, para debugging)
+console.log('=== API Configuration ===');
+console.log('Environment:', APP_ENV);
+console.log('API_BASE_URL_FROM_CONFIG:', API_BASE_URL_FROM_CONFIG);
+console.log('API Base URL (final):', API_BASE_URL);
+console.log('__DEV__:', __DEV__);
+console.log('=======================');
 
 // Timeout para peticiones
 const REQUEST_TIMEOUT = 5000;  // 5 segundos para peticiones normales
@@ -77,11 +77,17 @@ export const apiClient = {
   fetch: async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
 
-    // Validar seguridad de la conexión
-    validateRequestUrl(url);
+    // Log para debugging (siempre)
+    console.log('[apiClient] Fetch URL:', url);
+    console.log('[apiClient] Method:', options.method || 'GET');
 
-    if (__DEV__) {
-      console.log('Fetch URL:', url);
+    // Validar seguridad de la conexión
+    try {
+      validateRequestUrl(url);
+      console.log('[apiClient] URL validation passed');
+    } catch (error) {
+      console.error('[apiClient] URL validation failed:', error.message);
+      throw error;
     }
 
     // Agregar headers por defecto (compresión gzip y token JWT)

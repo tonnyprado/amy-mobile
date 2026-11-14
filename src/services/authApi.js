@@ -11,17 +11,25 @@ import { apiClient } from '../config/api';
  * @returns {Promise<Object>} Usuario autenticado
  */
 export async function login(username, password) {
+  console.log('[authApi] Intentando login para usuario:', username);
+
   const response = await apiClient.post('/api/usuarios/login', {
     usuario: username,
     password: password
   });
 
+  console.log('[authApi] Response status:', response.status);
+  console.log('[authApi] Response ok:', response.ok);
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Error de autenticación' }));
+    console.error('[authApi] Login falló:', error);
     throw new Error(error.message || 'Credenciales inválidas');
   }
 
-  return await response.json();
+  const userData = await response.json();
+  console.log('[authApi] Login exitoso para usuario:', userData.usuario);
+  return userData;
 }
 
 /**
