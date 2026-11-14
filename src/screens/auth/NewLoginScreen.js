@@ -2,7 +2,7 @@
 // Formulario de credenciales con TextInputs simples
 
 import React, { useState, useCallback, memo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, TextInput, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, TextInput, Linking, Alert } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { LOTTIE_LOGIN } from './slides.js';
@@ -50,15 +50,36 @@ export default function NewLoginScreen({
   const handleSubmit = useCallback(async () => {
     if (loading) return;
 
+    // Validar campos vacíos
+    if (!user.trim()) {
+      Alert.alert('Campo requerido', 'Por favor ingresa tu usuario', [{ text: 'OK' }]);
+      return;
+    }
+
+    if (!pwd.trim()) {
+      Alert.alert('Campo requerido', 'Por favor ingresa tu contraseña', [{ text: 'OK' }]);
+      return;
+    }
+
     buttonScale.value = withTiming(0.985, { duration: 100 });
     setLoading(true);
+
+    console.log('Intentando login con usuario:', user);
 
     try {
       if (onSubmit) {
         await onSubmit(user, pwd);
+        console.log('Login exitoso');
       } else {
         await new Promise((res) => setTimeout(res, 2200)); // demo
       }
+    } catch (error) {
+      console.error('Error de login:', error);
+      Alert.alert(
+        'Error de autenticación',
+        error.message || 'Usuario o contraseña incorrectos. Por favor, verifica tus credenciales e intenta de nuevo.',
+        [{ text: 'OK' }]
+      );
     } finally {
       setLoading(false);
       buttonScale.value = withTiming(1, { duration: 100 });

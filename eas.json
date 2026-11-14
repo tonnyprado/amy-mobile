@@ -17,7 +17,8 @@
         "simulator": true
       },
       "env": {
-        "APP_ENV": "development"
+        "APP_ENV": "development",
+        "API_BASE_URL": "https://mixer-biodiversity-nikon-pizza.trycloudflare.com"
       }
     },
     "preview": {
@@ -31,7 +32,8 @@
         "buildConfiguration": "Release"
       },
       "env": {
-        "APP_ENV": "staging"
+        "APP_ENV": "staging",
+        "API_BASE_URL": "https://mixer-biodiversity-nikon-pizza.trycloudflare.com"
       }
     },
     "production": {
@@ -45,7 +47,8 @@
         "buildConfiguration": "Release"
       },
       "env": {
-        "APP_ENV": "production"
+        "APP_ENV": "production",
+        "API_BASE_URL": "https://mixer-biodiversity-nikon-pizza.trycloudflare.com"
       }
     }
   },

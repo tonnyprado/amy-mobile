@@ -8,6 +8,9 @@
  * - APP_ENV: Entorno actual (development/staging/production)
  */
 
+// Cargar variables de entorno desde .env
+require('dotenv').config();
+
 const IS_DEV = process.env.APP_ENV === 'development';
 const IS_STAGING = process.env.APP_ENV === 'staging';
 const IS_PROD = process.env.APP_ENV === 'production';
