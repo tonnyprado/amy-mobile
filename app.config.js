@@ -107,7 +107,7 @@ export default {
         {
           icon: './assets/icon.png',
           color: '#2563eb',
-          sounds: ['./assets/sounds/notification.wav']
+          //sounds: ['./assets/sounds/notification.wav']
         }
       ]
     ],
