@@ -19,6 +19,11 @@ const ALLOWED_DEV_HOSTS = [
   '10.0.2.2', // Android emulator
 ];
 
+// Dominios de desarrollo permitidos (tunnels, etc)
+const ALLOWED_DEV_DOMAINS = [
+  'trycloudflare.com', // Cloudflare tunnels
+];
+
 /**
  * Valida que la URL sea de un host permitido.
  * Previene conexiones a servidores no autorizados.
@@ -28,12 +33,17 @@ export function isAllowedHost(url) {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname;
 
-    // En desarrollo, permitir hosts locales y de producción
+    // En desarrollo, permitir hosts locales, dominios de desarrollo y de producción
     if (__DEV__) {
       const isLocalHost = ALLOWED_DEV_HOSTS.some(host =>
         hostname === host || hostname.startsWith('192.168.') || hostname.startsWith('10.')
       );
-      return isLocalHost || ALLOWED_PRODUCTION_HOSTS.includes(hostname);
+
+      const isDevDomain = ALLOWED_DEV_DOMAINS.some(domain =>
+        hostname.endsWith(domain)
+      );
+
+      return isLocalHost || isDevDomain || ALLOWED_PRODUCTION_HOSTS.includes(hostname);
     }
 
     // En producción, solo permitir hosts autorizados
