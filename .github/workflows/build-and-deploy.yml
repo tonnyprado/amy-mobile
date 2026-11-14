@@ -59,14 +59,17 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Get build ID and download APK
+      - name: Download APK
         run: |
           # Obtener el ID del último build exitoso
           BUILD_ID=$(eas build:list --platform=android --status=finished --non-interactive --json --limit=1 | jq -r '.[0].id')
           echo "Build ID: $BUILD_ID"
 
-          # Descargar el APK
-          eas build:download --id=$BUILD_ID --output=./mendiola-logistics.apk
+          # Descargar el APK (se descarga automáticamente con nombre generado)
+          eas build:download $BUILD_ID
+
+          # Renombrar al APK descargado
+          mv *.apk mendiola-logistics.apk || echo "APK already has correct name"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
@@ -144,14 +147,17 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Get build ID and download IPA
+      - name: Download IPA
         run: |
           # Obtener el ID del último build exitoso
           BUILD_ID=$(eas build:list --platform=ios --status=finished --non-interactive --json --limit=1 | jq -r '.[0].id')
           echo "Build ID: $BUILD_ID"
 
-          # Descargar el IPA
-          eas build:download --id=$BUILD_ID --output=./mendiola-logistics.ipa
+          # Descargar el IPA (se descarga automáticamente con nombre generado)
+          eas build:download $BUILD_ID
+
+          # Renombrar al IPA descargado
+          mv *.ipa mendiola-logistics.ipa || echo "IPA already has correct name"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
