@@ -65,8 +65,8 @@ jobs:
           BUILD_ID=$(eas build:list --platform=android --status=finished --non-interactive --json --limit=1 | jq -r '.[0].id')
           echo "Build ID: $BUILD_ID"
 
-          # Descargar el APK (se descarga automáticamente con nombre generado)
-          eas build:download $BUILD_ID
+          # Descargar el APK con flag --id
+          eas build:download --id="$BUILD_ID"
 
           # Renombrar al APK descargado
           mv *.apk mendiola-logistics.apk || echo "APK already has correct name"
@@ -153,8 +153,8 @@ jobs:
           BUILD_ID=$(eas build:list --platform=ios --status=finished --non-interactive --json --limit=1 | jq -r '.[0].id')
           echo "Build ID: $BUILD_ID"
 
-          # Descargar el IPA (se descarga automáticamente con nombre generado)
-          eas build:download $BUILD_ID
+          # Descargar el IPA con flag --id
+          eas build:download --id="$BUILD_ID"
 
           # Renombrar al IPA descargado
           mv *.ipa mendiola-logistics.ipa || echo "IPA already has correct name"
