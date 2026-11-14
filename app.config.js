@@ -118,10 +118,10 @@ export default {
     },
 
     extra: {
-      // EAS projectId será generado automáticamente en el primer build
-      // eas: {
-      //   projectId: 'PENDIENTE_GENERAR'
-      // },
+      // EAS Project ID
+      eas: {
+        projectId: '44cf3f9d-4634-4ef5-afa2-513925775322'
+      },
 
       // Variables de entorno accesibles desde la app
       API_BASE_URL: process.env.API_BASE_URL ||
