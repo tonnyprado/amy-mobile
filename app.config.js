@@ -118,8 +118,9 @@ export default {
     },
 
     extra: {
+      // EAS Project ID
       eas: {
-        projectId: '1234d890-c5e0-45df-88fd-6040a1bb7129'
+        projectId: '44cf3f9d-4634-4ef5-afa2-513925775322'
       },
 
       // Variables de entorno accesibles desde la app
