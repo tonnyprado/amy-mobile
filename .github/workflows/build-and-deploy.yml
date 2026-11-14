@@ -68,24 +68,21 @@ jobs:
           BUILD_ID=$(eas build:list --platform=android --status=finished --non-interactive --json --limit=1 | jq -r '.[0].id')
           echo "Build ID: $BUILD_ID"
 
-          # Descargar el APK con flag --id
+          # Descargar el APK
           eas build:download --id="$BUILD_ID"
 
-          # Listar archivos para debug
-          echo "Files in current directory:"
-          ls -la
+          # Buscar el APK descargado en el directorio de cache
+          CACHE_DIR="/tmp/runner/eas-cli-nodejs/eas-build-run-cache"
+          APK_FILE=$(find "$CACHE_DIR" -name "*.apk" -type f 2>/dev/null | head -n 1)
 
-          # Renombrar al APK descargado
-          if [ -f *.apk ]; then
-            mv *.apk mendiola-logistics.apk
-            echo "APK renamed to mendiola-logistics.apk"
+          if [ -n "$APK_FILE" ]; then
+            echo "Found APK at: $APK_FILE"
+            cp "$APK_FILE" ./mendiola-logistics.apk
+            ls -lh mendiola-logistics.apk
           else
-            echo "ERROR: No APK file found!"
+            echo "ERROR: No APK file found in cache directory"
             exit 1
           fi
-
-          # Verificar que existe
-          ls -lh mendiola-logistics.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
