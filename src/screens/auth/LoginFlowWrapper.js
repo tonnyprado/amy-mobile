@@ -1,13 +1,15 @@
 // src/screens/auth/LoginFlowWrapper.js
 // Wrapper que conecta LoginFlow con AuthContext
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Alert } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import LoginFlow from './LoginFlow';
+import DebugScreen from '../DebugScreen';
 
 export default function LoginFlowWrapper() {
   const { login } = useAuth();
+  const [showDebug, setShowDebug] = useState(false);
 
   const handleAuthenticated = async (username, password) => {
     try {
@@ -20,6 +22,14 @@ export default function LoginFlowWrapper() {
     }
   };
 
+  const handleDebug = () => {
+    setShowDebug(true);
+  };
+
+  if (showDebug) {
+    return <DebugScreen onClose={() => setShowDebug(false)} />;
+  }
+
   return (
     <LoginFlow
       palette="coral"
@@ -27,6 +37,7 @@ export default function LoginFlowWrapper() {
       backdrop="circle"
       loginAnimSize={260}
       onAuthenticated={handleAuthenticated}
+      onDebug={handleDebug}
     />
   );
 }

@@ -19,6 +19,7 @@ export default function LoginFlow({
   backdrop = 'circle',
   loginAnimSize = 260,
   onAuthenticated, // (user, password) => Promise resolved on success
+  onDebug, // Callback para debug mode
 }) {
   const theme = THEMES[palette] || THEMES[DEFAULT_PALETTE];
   const slides = skipOnboarding ? 0 : onboardingSlides;
@@ -48,6 +49,7 @@ export default function LoginFlow({
           onBack={() => setStep(Math.max(0, slides - 1))}
           lottieSize={loginAnimSize}
           onSubmit={onAuthenticated}
+          onDebug={onDebug}
         />
       )}
     </View>

@@ -34,12 +34,14 @@ export default function NewLoginScreen({
   showBack = true,
   lottieSize = 260,
   onSubmit, // (user, password) => Promise
+  onDebug, // Callback para abrir pantalla de debug
 }) {
   const [user, setUser] = useState('');
   const [pwd, setPwd] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [focusedField, setFocusedField] = useState('');
   const [loading, setLoading] = useState(false);
+  const [logoTapCount, setLogoTapCount] = useState(0);
 
   const buttonScale = useSharedValue(1);
 
@@ -87,6 +89,23 @@ export default function NewLoginScreen({
   }, [loading, onSubmit, user, pwd]);
 
   const toggleShowPwd = useCallback(() => setShowPwd(v => !v), []);
+
+  const handleLogoTap = useCallback(() => {
+    setLogoTapCount(prev => {
+      const newCount = prev + 1;
+      if (newCount >= 7 && onDebug) {
+        Alert.alert('🔧 Modo Debug', '¿Abrir pantalla de diagnóstico?', [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir', onPress: onDebug }
+        ]);
+        return 0;
+      }
+      return newCount;
+    });
+
+    // Reset counter después de 2 segundos
+    setTimeout(() => setLogoTapCount(0), 2000);
+  }, [onDebug]);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.canvas }}>
@@ -143,7 +162,10 @@ export default function NewLoginScreen({
           ) : (
             <View />
           )}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <TouchableOpacity
+            onPress={handleLogoTap}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+          >
             <TruckMark size={26} theme={theme} />
             <Text
               style={{
@@ -155,7 +177,7 @@ export default function NewLoginScreen({
             >
               Mendiola Logistics
             </Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Hero animation */}
