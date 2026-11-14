@@ -85,6 +85,15 @@ export default function OrdersScreen({ theme, pedidos = [], onPedidoPress }) {
               </Text>
             </View>
           }
+          initialNumToRender={8}
+          maxToRenderPerBatch={5}
+          windowSize={5}
+          removeClippedSubviews={true}
+          getItemLayout={(data, index) => ({
+            length: 110,
+            offset: 110 * index,
+            index,
+          })}
         />
       </View>
     </SectionShell>
@@ -166,7 +175,7 @@ function Filters({ theme, counts, filter, setFilter }) {
   );
 }
 
-function OrderCard({ order, theme, statusMeta, onPress, tone }) {
+const OrderCard = React.memo(({ order, theme, statusMeta, onPress, tone }) => {
   const isActive = order.estado === 'EN_RUTA';
 
   return (
@@ -272,7 +281,11 @@ function OrderCard({ order, theme, statusMeta, onPress, tone }) {
       </View>
     </TouchableOpacity>
   );
-}
+}, (prevProps, nextProps) => {
+  return prevProps.order.id === nextProps.order.id &&
+         prevProps.order.estado === nextProps.order.estado &&
+         prevProps.tone === nextProps.tone;
+});
 
 const styles = StyleSheet.create({
   cartBadge: {

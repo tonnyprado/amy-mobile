@@ -247,6 +247,32 @@ export async function obtenerIntentosEntrega(pedidoId) {
 }
 
 // ============================================================================
+// SOLICITUDES DE PASE
+// ============================================================================
+
+/**
+ * Solicita un pase para un pedido (el repartidor quiere rechazarlo)
+ * @param {string} idRepartidor - ID del repartidor que solicita el pase
+ * @param {Object} solicitud
+ * @param {number} solicitud.pedidoId - ID del pedido
+ * @param {string} solicitud.motivoPase - Motivo del pase
+ * @returns {Promise<Object>}
+ */
+export async function solicitarPase(idRepartidor, solicitud) {
+  const response = await apiClient.post(`/api/pases/repartidor/${idRepartidor}`, {
+    pedidoId: solicitud.pedidoId,
+    motivoPase: solicitud.motivoPase
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'Error al solicitar pase');
+  }
+
+  return await response.json();
+}
+
+// ============================================================================
 // LOG DE ACTIVIDADES
 // ============================================================================
 
@@ -351,13 +377,14 @@ export const TIPO_ACTIVIDAD = {
 
 /**
  * Mapea el estado del backend al estado del frontend
- * @param {string} estadoBackend - PENDIENTE, EN_RUTA, ENTREGADO, NO_ENTREGADO
+ * @param {string} estadoBackend - PENDIENTE, EN_RUTA, EN_ESPERA_PASE, ENTREGADO, NO_ENTREGADO
  * @returns {string}
  */
 export function mapearEstadoBackend(estadoBackend) {
   const mapa = {
     'PENDIENTE': 'PENDIENTE',
     'EN_RUTA': 'EN_RUTA',
+    'EN_ESPERA_PASE': 'EN_ESPERA_PASE',
     'ENTREGADO': 'ENTREGADO',
     'NO_ENTREGADO': 'NO_ENTREGADO'
   };
@@ -442,6 +469,9 @@ export default {
   // Intentos
   registrarIntentoEntrega,
   obtenerIntentosEntrega,
+
+  // Pases
+  solicitarPase,
 
   // Actividades
   registrarActividad,
