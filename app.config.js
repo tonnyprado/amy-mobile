@@ -15,7 +15,7 @@ const IS_PROD = process.env.APP_ENV === 'production';
 export default {
   expo: {
     name: 'Mendiola Logistics',
-    slug: 'amy-delivery',
+    slug: 'mendiola-logistics',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
@@ -118,9 +118,10 @@ export default {
     },
 
     extra: {
-      eas: {
-        projectId: '1234d890-c5e0-45df-88fd-6040a1bb7129'
-      },
+      // EAS projectId será generado automáticamente en el primer build
+      // eas: {
+      //   projectId: 'PENDIENTE_GENERAR'
+      // },
 
       // Variables de entorno accesibles desde la app
       API_BASE_URL: process.env.API_BASE_URL ||
