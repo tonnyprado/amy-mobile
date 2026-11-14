@@ -48,6 +48,9 @@ export default {
     },
 
     android: {
+      compileSdkVersion: 34,                                       
+      targetSdkVersion: 34,                                        
+      buildToolsVersion: '34.0.0', 
       config: {
         googleMaps: {
           apiKey: process.env.GOOGLE_MAPS_API_KEY || 'GOOGLE_MAPS_API_KEY_NOT_SET'
