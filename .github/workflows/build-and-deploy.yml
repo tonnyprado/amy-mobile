@@ -41,8 +41,13 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Verify EAS installation
+        run: |
+          eas --version
+          eas whoami || echo "Not logged in with EXPO_TOKEN"
+
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build Android APK
         run: eas build --platform android --profile preview --non-interactive
@@ -106,8 +111,13 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Verify EAS installation
+        run: |
+          eas --version
+          eas whoami || echo "Not logged in with EXPO_TOKEN"
+
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       - name: Build iOS IPA (Ad-Hoc)
         run: eas build --platform ios --profile preview --non-interactive
