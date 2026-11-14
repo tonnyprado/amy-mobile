@@ -19,6 +19,9 @@ on:
           - android
           - ios
 
+permissions:
+  contents: write
+
 jobs:
   build-android:
     name: Build Android APK
@@ -68,8 +71,21 @@ jobs:
           # Descargar el APK con flag --id
           eas build:download --id="$BUILD_ID"
 
+          # Listar archivos para debug
+          echo "Files in current directory:"
+          ls -la
+
           # Renombrar al APK descargado
-          mv *.apk mendiola-logistics.apk || echo "APK already has correct name"
+          if [ -f *.apk ]; then
+            mv *.apk mendiola-logistics.apk
+            echo "APK renamed to mendiola-logistics.apk"
+          else
+            echo "ERROR: No APK file found!"
+            exit 1
+          fi
+
+          # Verificar que existe
+          ls -lh mendiola-logistics.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
