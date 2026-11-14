@@ -10,6 +10,7 @@
 const ALLOWED_PRODUCTION_HOSTS = [
   'amy-backend-minutaapi.onrender.com',  // Render (actual)
   'controlminutasapi-production.up.railway.app',  // Railway (legacy)
+  'mixer-biodiversity-nikon-pizza.trycloudflare.com',  // Cloudflare tunnel (temporal)
 ];
 
 // En desarrollo, permitir conexiones locales
