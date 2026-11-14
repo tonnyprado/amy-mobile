@@ -30,9 +30,11 @@ Se ha implementado la funcionalidad de escaneo de cajas con OCR local para la ap
 - ✅ Animación slide desde abajo
 
 ### 4. **Librerías Instaladas**
-- ✅ `react-native-text-recognition` (v1.0.2) - OCR local con ML Kit
+- ✅ `@react-native-ml-kit/text-recognition` (v2.0.0) - OCR local con ML Kit (oficial)
 - ✅ `react-native-tts` (v4.1.1) - Text-to-speech
 - ✅ `expo-camera` (v17.0.10) - Ya existente
+
+**Nota:** Se removió `react-native-text-recognition` (obsoleto) y se usa la librería oficial de Google ML Kit.
 
 ---
 
@@ -223,9 +225,11 @@ Para dudas o ajustes, contacta al desarrollador con:
 
 ## ✨ Características Técnicas
 
-- **OCR Engine:** Google ML Kit (local, offline)
+- **OCR Engine:** Google ML Kit v2 (@react-native-ml-kit/text-recognition)
 - **Velocidad:** <1 segundo por escaneo
 - **Idioma TTS:** Español México
 - **Frecuencia escaneo:** Cada 1 segundo (automático)
 - **Cooldown:** 2 segundos entre escaneos exitosos
 - **Calidad foto OCR:** 80% (balance velocidad/precisión)
+
+**Nota:** La funcionalidad está deshabilitada. Requiere Custom Development Client para funcionar.
