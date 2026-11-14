@@ -55,7 +55,7 @@ export default {
       },
 
       package: 'com.mendiolalogistics.delivery',
-      versionCode: 1,
+      // versionCode se maneja automáticamente con EAS remote versioning
 
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',

@@ -102,7 +102,8 @@ jobs:
   build-ios:
     name: Build iOS IPA
     runs-on: macos-latest
-    if: github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all' || github.event.inputs.platform == ''
+    # iOS deshabilitado temporalmente - requiere Apple Developer account ($99/año)
+    if: false && (github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all' || github.event.inputs.platform == '')
 
     steps:
       - name: Checkout code
