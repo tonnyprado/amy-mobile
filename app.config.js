@@ -15,7 +15,7 @@ const IS_PROD = process.env.APP_ENV === 'production';
 export default {
   expo: {
     name: 'Mendiola Logistics',
-    slug: 'mendiola-logistics',
+    slug: 'amy-delivery',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
