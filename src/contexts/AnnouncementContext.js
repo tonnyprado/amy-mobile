@@ -129,6 +129,12 @@ export function AnnouncementProvider({ children }) {
 
     // Función para suscribirse con reintentos
     const subscribeToAnnouncements = async () => {
+      // No intentar conectar si no hay usuario
+      if (!user?.id) {
+        console.log('⏸️  No hay usuario autenticado, saltando suscripción a anuncios');
+        return;
+      }
+
       try {
         console.log('📢 Conectando al WebSocket para anuncios...');
         console.log(`📢 Topic de suscripción: /topic/chat/user/${user.id}`);
@@ -161,17 +167,18 @@ export function AnnouncementProvider({ children }) {
           console.log('✅ El sistema de anuncios está ACTIVO y escuchando');
         }
       } catch (error) {
-        console.error('❌ Error al suscribirse a anuncios:', error);
+        // Usar warn en lugar de error para que no sea tan intrusivo
+        console.warn('⚠️  No se pudo conectar a anuncios en tiempo real:', error.message);
 
-        // Reintentar después de 3 segundos si aún está montado
-        if (mounted) {
-          console.log('🔄 Reintentando suscripción en 3 segundos...');
-          setTimeout(() => {
-            if (mounted) {
-              subscribeToAnnouncements();
-            }
-          }, 3000);
-        }
+        // No reintentar - el sistema se reconectará automáticamente cuando el WebSocket esté disponible
+        // if (mounted) {
+        //   console.log('🔄 Reintentando suscripción en 3 segundos...');
+        //   setTimeout(() => {
+        //     if (mounted) {
+        //       subscribeToAnnouncements();
+        //     }
+        //   }, 3000);
+        // }
       }
     };
 
